@@ -78,14 +78,14 @@ runs:
       shell: pwsh
       run: |
         $latest = (gh release list --limit 1)
-        Write-Host "$latest"
+        Write-Host "latest release is '$latest'"
         $release = (gh release view ${{ steps.gitversion.outputs.SemVer }} --json id,name) | ConvertFrom-Json
         if ($null -eq $release) {
           Write-Host "Release not found, we are ok to push the new package..."
           Write-Host "::set-output name=DoPush::true"
         }
         else {
-          Write-Host "Release already exists, skipping push."
+          Write-Host "Release already exists, continuing build/test/pack but skipping push..."
           Write-Host "::set-output name=DoPush::false"
         }
       id: check_exists
