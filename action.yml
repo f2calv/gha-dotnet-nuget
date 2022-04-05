@@ -18,13 +18,13 @@ inputs:
 
 outputs:
   SemVer:
-    description: xyz
+    description: i.e. 1.2.2
     value: ${{ steps.gitversion.outputs.SemVer }}
   FullSemVer:
-    description: xyz
+    description: i.e. 1.2.2-2022-04-ci-updates.13
     value: ${{ steps.gitversion.outputs.FullSemVer }}
   BuildConfiguration:
-    description: xyz
+    description: i.e. Debug or Release
     value: ${{ steps.setvars.outputs.BuildConfiguration }}
 
 runs:
