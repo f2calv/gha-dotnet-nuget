@@ -77,19 +77,23 @@ runs:
     - name: gh release view
       shell: pwsh
       run: |
-        $latest = (gh release list --limit 1)
-        Write-Host "latest release is '$latest'"
-        $release = (gh release view ${{ steps.gitversion.outputs.SemVer }} --json id,name) | ConvertFrom-Json
-        if ($null -eq $release) {
-          Write-Host "Release not found, we are ok to push the new package..."
-          Write-Host "::set-output name=DoPush::true"
-        }
-        else {
+        $previous = (gh release list --limit 1) #TODO: potentially this might fail if it's the first ever release?
+        $previousTag = $previous.Split("`t")[0]
+        Write-Host "previous release semver is '$previousTag'"
+
+        $current = "${{ steps.gitversion.outputs.SemVer }}"
+        $currentTag = $current.Split("`t")[0]
+        Write-Host "current release semver is '$currentTag'"
+
+        if ($previousTag -eq $currentTag) {
           Write-Host "Release already exists, continuing build/test/pack but skipping push..."
           Write-Host "::set-output name=DoPush::false"
         }
+        else {
+          Write-Host "Release not found, we are ok to push the new package..."
+          Write-Host "::set-output name=DoPush::true"
+        }
       id: check_exists
-      #continue-on-error: true #Don't like this but it handles 'release not found'
       env:
         GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
 
