@@ -1,0 +1,182 @@
+name: .NET Build/Test/Pack/Publish
+description: Performs all the steps required to publish a versioned NuGet package to the official NuGet or GitHub packages feeds.
+
+inputs:
+  BuildConfiguration:
+    description: i.e. Debug or Release
+    default: Release
+    required: false
+  GITHUB_TOKEN:
+    description: i.e. secrets.GITHUB_TOKEN
+    required: true
+  NUGET_API_KEY:
+    description: i.e. secrets.NUGET_API_KEY
+    required: false
+  PublishPreview:
+    description: true / false
+    required: false
+
+outputs:
+  SemVer:
+    description: xyz
+    value: ${{ steps.gitversion.outputs.SemVer }}
+  FullSemVer:
+    description: xyz
+    value: ${{ steps.gitversion.outputs.FullSemVer }}
+  BuildConfiguration:
+    description: xyz
+    value: ${{ steps.setvars.outputs.BuildConfiguration }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: set vars
+      shell: bash
+      id: setvars
+      run: |
+        BuildConfiguration=${{ inputs.BuildConfiguration }}
+        echo "::set-output name=BuildConfiguration::${BuildConfiguration:-"Release"}"
+
+    - name: .NET Core 3.1.x SDK
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.x
+
+    - name: .NET 6.x SDK
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 6.0.x
+
+    # - name: gitversion install
+    #   uses: gittools/actions/gitversion/setup@v0.9.7
+    #   with:
+    #     versionSpec: 5.x
+
+    # #https://gitversion.net/docs/usage/
+    # - name: gitversion determine version
+    #   id: gitversionOLD
+    #   uses: gittools/actions/gitversion/execute@v0.9.7
+    #   with:
+    #     useConfigFile: true
+
+    - name: gitversion
+      id: gitversion
+      run: |
+        dotnet tool update -g GitVersion.Tool
+        $GitVersion = dotnet-gitversion ${{ github.workspace }} /nofetch | ConvertFrom-Json
+        echo "SemVer=$($GitVersion.SemVer)"
+        echo "::set-output name=SemVer::$($GitVersion.SemVer)"
+        echo "FullSemVer=$($GitVersion.FullSemVer)"
+        echo "::set-output name=FullSemVer::$($GitVersion.FullSemVer)"
+      shell: pwsh
+
+    - name: gh release view
+      shell: pwsh
+      run: |
+        $latest = (gh release list --limit 1)
+        Write-Host "$latest"
+        $release = (gh release view ${{ steps.gitversion.outputs.SemVer }} --json id,name) | ConvertFrom-Json
+        if ($null -eq $release) {
+          Write-Host "Release not found, we are ok to push the new package..."
+          Write-Host "::set-output name=DoPush::true"
+        }
+        else {
+          Write-Host "Release already exists, skipping push."
+          Write-Host "::set-output name=DoPush::false"
+        }
+      id: check_exists
+      #continue-on-error: true #Don't like this but it handles 'release not found'
+      env:
+        GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
+
+    - name: dotnet restore
+      shell: bash
+      run: dotnet restore --verbosity minimal --configfile nuget.config
+
+    - name: dotnet build
+      shell: bash
+      run: dotnet build -c ${{ steps.setvars.outputs.BuildConfiguration }} --nologo --no-restore -p:Version='${{ steps.gitversion.outputs.SemVer }}' -p:SourceRevisionId=${{ github.sha }}
+
+    - name: dotnet test
+      shell: bash
+      run: dotnet test -c ${{ steps.setvars.outputs.BuildConfiguration }} --nologo --no-restore --no-build -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=${{ github.workspace }}/coverage/
+
+    - name: code coverage - coveralls (1 of 3) - .NET Core 3.1.x
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ inputs.GITHUB_TOKEN }}
+        path-to-lcov: ${{ github.workspace }}/coverage/coverage.netcoreapp3.1.info
+        flag-name: run-netcoreapp3.1
+        parallel: true
+
+    - name: code coverage - coveralls (2 of 3) - .NET 6.x SDK
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ inputs.GITHUB_TOKEN }}
+        path-to-lcov: ${{ github.workspace }}/coverage/coverage.net6.0.info
+        flag-name: run-net6.0
+        parallel: true
+
+    - name: code coverage - coveralls (3 of 3)
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ inputs.GITHUB_TOKEN }}
+        parallel-finished: true
+
+    # - name: code coverage - report generator
+    #   uses: danielpalme/ReportGenerator-GitHub-Action@4.5.8
+    #   if: runner.OS == 'Linux'
+    #   with:
+    #     reports: ./coverage/coverage.*.info
+    #     targetdir: ./coveragereport
+    #     reporttypes: lcov
+    #     tag: ${{ github.run_number }}_${{ github.run_id }}
+
+    - name: reportgenerator
+      shell: bash
+      run: |
+        dotnet tool update -g dotnet-reportgenerator-globaltool
+        reportgenerator -reports:./coverage/coverage.*.info \
+          -targetdir:./coveragereport \
+          -reporttypes:lcov \
+          -tag:${{ github.run_number }}_${{ github.run_id }}
+
+    - name: code coverage - upload-artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: coveragereport
+        path: coveragereport
+
+    - name: dotnet pack
+      shell: bash
+      run: dotnet pack -c ${{ steps.setvars.outputs.BuildConfiguration }} --nologo --no-build --include-symbols -p:Version='${{ steps.gitversion.outputs.SemVer }}'
+      if: github.ref == 'refs/heads/main'
+
+    - name: dotnet push (api.nuget.org)
+      shell: bash
+      run: |
+        if [[ "${{ inputs.NUGET_API_KEY }}" != "" ]]; \
+        then
+          dotnet nuget push ${{ github.workspace }}/src/**/*.nupkg --skip-duplicate -k ${{ inputs.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
+        else
+          echo "::warning title=NUGET_API_KEY::NUGET_API_KEY is missing from secrets, skipping push to api.nuget.org."
+        fi
+      if: steps.check_exists.outputs.DoPush == 'true' && (github.ref == 'refs/heads/main' || github.event.inputs.PublishPreview == 'true')
+
+    - name: dotnet push (nuget.pkg.github.com)
+      shell: bash
+      run: |
+        dotnet tool update -g gpr
+        gpr push ${{ github.workspace }}/src/**/*.nupkg -k ${{ inputs.GITHUB_TOKEN }}
+      if: steps.check_exists.outputs.DoPush == 'true' && (github.ref == 'refs/heads/main' || github.event.inputs.PublishPreview == 'true')
+
+    - name: create release ${{ steps.gitversion.outputs.FullSemVer }}
+      uses: softprops/action-gh-release@v1
+      if: steps.check_exists.outputs.DoPush == 'true' && (github.ref == 'refs/heads/main' || github.event.inputs.PublishPreview == 'true')
+      with:
+        tag_name: ${{ steps.gitversion.outputs.FullSemVer }}
+        name: ${{ steps.gitversion.outputs.FullSemVer }}
