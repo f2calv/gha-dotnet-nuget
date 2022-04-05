@@ -2,15 +2,15 @@ name: .NET Build/Test/Pack/Publish
 description: Performs all the steps required to publish a versioned NuGet package to the official NuGet or GitHub packages feeds.
 
 inputs:
-  BuildConfiguration:
-    description: i.e. Debug or Release
-    default: Release
-    required: false
   GITHUB_TOKEN:
     description: i.e. secrets.GITHUB_TOKEN
     required: true
   NUGET_API_KEY:
     description: i.e. secrets.NUGET_API_KEY
+    required: false
+  BuildConfiguration:
+    description: i.e. Debug or Release
+    default: Release
     required: false
   PublishPreview:
     description: true / false
@@ -154,7 +154,7 @@ runs:
     - name: dotnet pack
       shell: bash
       run: dotnet pack -c ${{ steps.setvars.outputs.BuildConfiguration }} --nologo --no-build --include-symbols -p:Version='${{ steps.gitversion.outputs.SemVer }}'
-      if: github.ref == 'refs/heads/main'
+      if: github.ref == 'github.event.repository.default_branch'
 
     - name: dotnet push (api.nuget.org)
       shell: bash
@@ -165,18 +165,18 @@ runs:
         else
           echo "::warning title=NUGET_API_KEY::NUGET_API_KEY is missing from secrets, skipping push to api.nuget.org."
         fi
-      if: steps.check_exists.outputs.DoPush == 'true' && (github.ref == 'refs/heads/main' || github.event.inputs.PublishPreview == 'true')
+      if: steps.check_exists.outputs.DoPush == 'true' && (github.ref == 'github.event.repository.default_branch' || github.event.inputs.PublishPreview == 'true')
 
     - name: dotnet push (nuget.pkg.github.com)
       shell: bash
       run: |
         dotnet tool update -g gpr
         gpr push ${{ github.workspace }}/src/**/*.nupkg -k ${{ inputs.GITHUB_TOKEN }}
-      if: steps.check_exists.outputs.DoPush == 'true' && (github.ref == 'refs/heads/main' || github.event.inputs.PublishPreview == 'true')
+      if: steps.check_exists.outputs.DoPush == 'true' && (github.ref == 'github.event.repository.default_branch' || github.event.inputs.PublishPreview == 'true')
 
     - name: create release ${{ steps.gitversion.outputs.FullSemVer }}
       uses: softprops/action-gh-release@v1
-      if: steps.check_exists.outputs.DoPush == 'true' && (github.ref == 'refs/heads/main' || github.event.inputs.PublishPreview == 'true')
+      if: steps.check_exists.outputs.DoPush == 'true' && (github.ref == 'github.event.repository.default_branch' || github.event.inputs.PublishPreview == 'true')
       with:
         tag_name: ${{ steps.gitversion.outputs.FullSemVer }}
         name: ${{ steps.gitversion.outputs.FullSemVer }}
