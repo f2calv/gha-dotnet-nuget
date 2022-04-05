@@ -82,7 +82,7 @@ runs:
         Write-Host "previous release semver is '$previousTag'"
 
         $current = "${{ steps.gitversion.outputs.SemVer }}"
-        $currentTag = $current.Split("`t")[0]
+        $currentTag = $current.Split("`-")[0]
         Write-Host "current release semver is '$currentTag'"
 
         if ($previousTag -eq $currentTag) {
