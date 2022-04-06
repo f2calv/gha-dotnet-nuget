@@ -64,6 +64,7 @@ runs:
     #     useConfigFile: true
 
     - name: gitversion
+      shell: pwsh
       id: gitversion
       run: |
         dotnet tool update -g GitVersion.Tool
@@ -72,27 +73,13 @@ runs:
         echo "::set-output name=SemVer::$($GitVersion.SemVer)"
         echo "FullSemVer=$($GitVersion.FullSemVer)"
         echo "::set-output name=FullSemVer::$($GitVersion.FullSemVer)"
-      shell: pwsh
 
     - name: gh release view
       shell: pwsh
       run: |
-        $previous = (gh release list --limit 1) #TODO: potentially this might fail if it's the first ever release?
-        $previousTag = $previous.Split("`t")[0]
-        Write-Host "previous release semver is '$previousTag'"
-
-        $current = "${{ steps.gitversion.outputs.SemVer }}"
-        $currentTag = $current.Split("`-")[0]
-        Write-Host "current release semver is '$currentTag'"
-
-        if ($previousTag -eq $currentTag) {
-          Write-Host "Release already exists, continuing build/test/pack but skipping push..."
-          Write-Host "::set-output name=DoPush::false"
-        }
-        else {
-          Write-Host "Release not found, we are ok to push the new package..."
-          Write-Host "::set-output name=DoPush::true"
-        }
+        . .scripts/Invoke-PriorReleaseCheck.ps1 `
+          -SemVer ${{ steps.gitversion.outputs.SemVer }} `
+          -FullSemVer ${{ steps.gitversion.outputs.SemVer }}
       id: check_exists
       env:
         GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
