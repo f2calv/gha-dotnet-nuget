@@ -77,7 +77,10 @@ runs:
 
     - name: gh release view
       shell: pwsh
-      run: .\Invoke-PriorReleaseCheck.ps1 -SemVer ${{ steps.gitversion.outputs.SemVer }} -FullSemVer ${{ steps.gitversion.outputs.SemVer }}
+      run: |
+        & $env:GITHUB_ACTION_PATH/.scripts/Invoke-PriorReleaseCheck.ps1 `
+          -SemVer ${{ steps.gitversion.outputs.SemVer }} `
+          -FullSemVer ${{ steps.gitversion.outputs.SemVer }}
       id: check_exists
       env:
         GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
