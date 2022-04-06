@@ -70,31 +70,20 @@ runs:
       run: |
         dotnet tool update -g GitVersion.Tool
         $GitVersion = dotnet-gitversion ${{ github.workspace }} /nofetch | ConvertFrom-Json
-        echo "SemVer=$($GitVersion.SemVer)"
-        echo "::set-output name=SemVer::$($GitVersion.SemVer)"
-        echo "FullSemVer=$($GitVersion.FullSemVer)"
-        echo "::set-output name=FullSemVer::$($GitVersion.FullSemVer)"
+        Write-Host "SemVer=$($GitVersion.SemVer)"
+        Write-Host "::set-output name=SemVer::$($GitVersion.SemVer)"
+        Write-Host "FullSemVer=$($GitVersion.FullSemVer)"
+        Write-Host "::set-output name=FullSemVer::$($GitVersion.FullSemVer)"
 
     - name: gh release view
       shell: pwsh
+      id: check_exists
       run: |
         & $env:GITHUB_ACTION_PATH/.scripts/Invoke-PriorReleaseCheck.ps1 `
           -SemVer ${{ steps.gitversion.outputs.SemVer }} `
           -FullSemVer ${{ steps.gitversion.outputs.SemVer }}
-      id: check_exists
       env:
         GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
-  
-    # - name: gh release view
-    #   shell: pwsh
-    #   run: |
-    #     ls -lsa
-    #     . ./.scripts/Invoke-PriorReleaseCheck.ps1 `
-    #       -SemVer ${{ steps.gitversion.outputs.SemVer }} `
-    #       -FullSemVer ${{ steps.gitversion.outputs.SemVer }}
-    #   id: check_exists
-    #   env:
-    #     GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
 
     - name: dotnet restore
       shell: bash
