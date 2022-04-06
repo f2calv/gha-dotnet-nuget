@@ -77,7 +77,7 @@ runs:
     - name: gh release view
       shell: pwsh
       run: |
-        . .scripts/Invoke-PriorReleaseCheck.ps1 `
+        . ./.scripts/Invoke-PriorReleaseCheck.ps1 `
           -SemVer ${{ steps.gitversion.outputs.SemVer }} `
           -FullSemVer ${{ steps.gitversion.outputs.SemVer }}
       id: check_exists
