@@ -4,12 +4,10 @@
 
 #Note: we assume that the release 'name' is simply the SemVer, i.e 'x.x.x'
 
-# Param(
-#     [Parameter(Mandatory = $true)][System.String][ValidateNotNullOrEmpty()]$SemVer = "0.1.31",
-#     [Parameter(Mandatory = $true)][System.String][ValidateNotNullOrEmpty()]$FullSemVer = "0.1.32-preview-test123"
-# )
-$SemVer = "0.1.31"
-$FullSemVer = "0.1.32-preview-test123"
+Param(
+    [Parameter(Mandatory = $true)][System.String][ValidateNotNullOrEmpty()]$SemVer = "0.1.31",
+    [Parameter(Mandatory = $true)][System.String][ValidateNotNullOrEmpty()]$FullSemVer = "0.1.32-preview-test123"
+)
 
 Set-StrictMode -Version 3.0
 $ErrorActionPreference = "Stop"
