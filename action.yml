@@ -76,14 +76,21 @@ runs:
 
     - name: gh release view
       shell: pwsh
-      run: |
-        ls -lsa
-        . ./.scripts/Invoke-PriorReleaseCheck.ps1 `
-          -SemVer ${{ steps.gitversion.outputs.SemVer }} `
-          -FullSemVer ${{ steps.gitversion.outputs.SemVer }}
+      run: ./.scripts/Invoke-PriorReleaseCheck.ps1 -SemVer ${{ steps.gitversion.outputs.SemVer }} -FullSemVer ${{ steps.gitversion.outputs.SemVer }}
       id: check_exists
       env:
         GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
+  
+    # - name: gh release view
+    #   shell: pwsh
+    #   run: |
+    #     ls -lsa
+    #     . ./.scripts/Invoke-PriorReleaseCheck.ps1 `
+    #       -SemVer ${{ steps.gitversion.outputs.SemVer }} `
+    #       -FullSemVer ${{ steps.gitversion.outputs.SemVer }}
+    #   id: check_exists
+    #   env:
+    #     GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
 
     - name: dotnet restore
       shell: bash
