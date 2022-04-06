@@ -1,4 +1,5 @@
 name: .NET Build/Test/Pack/Publish
+author: Alex Vincent
 description: Performs all the steps required to publish a versioned NuGet package to the official NuGet or GitHub packages feeds.
 
 inputs:
@@ -76,7 +77,7 @@ runs:
 
     - name: gh release view
       shell: pwsh
-      run: ./.scripts/Invoke-PriorReleaseCheck.ps1 -SemVer ${{ steps.gitversion.outputs.SemVer }} -FullSemVer ${{ steps.gitversion.outputs.SemVer }}
+      run: .\Invoke-PriorReleaseCheck.ps1 -SemVer ${{ steps.gitversion.outputs.SemVer }} -FullSemVer ${{ steps.gitversion.outputs.SemVer }}
       id: check_exists
       env:
         GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
