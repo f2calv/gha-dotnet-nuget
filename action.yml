@@ -14,7 +14,7 @@ inputs:
     default: Release
     required: false
   PublishPreview:
-    description: true / false
+    description: Publish preview branch?
     required: false
 
 outputs:
