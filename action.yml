@@ -42,15 +42,15 @@ runs:
         BuildConfiguration=${{ inputs.BuildConfiguration }}
         echo "::set-output name=BuildConfiguration::${BuildConfiguration:-"Release"}"
 
-    - name: .NET Core 3.1.x SDK
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: 3.1.x
-
     - name: .NET 6.x SDK
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 6.0.x
+
+    - name: .NET 7.x SDK
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 7.0.x
 
     # - name: gitversion install
     #   uses: gittools/actions/gitversion/setup@v0.9.7
@@ -97,20 +97,20 @@ runs:
       shell: bash
       run: dotnet test -c ${{ steps.setvars.outputs.BuildConfiguration }} --nologo --no-restore --no-build -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=${{ github.workspace }}/coverage/
 
-    - name: code coverage - coveralls (1 of 3) - .NET Core 3.1.x
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ inputs.GITHUB_TOKEN }}
-        path-to-lcov: ${{ github.workspace }}/coverage/coverage.netcoreapp3.1.info
-        flag-name: run-netcoreapp3.1
-        parallel: true
-
-    - name: code coverage - coveralls (2 of 3) - .NET 6.x SDK
+    - name: code coverage - coveralls (1 of 3) - .NET 6.x SDK
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ inputs.GITHUB_TOKEN }}
         path-to-lcov: ${{ github.workspace }}/coverage/coverage.net6.0.info
         flag-name: run-net6.0
+        parallel: true
+
+    - name: code coverage - coveralls (2 of 3) - .NET 7.x SDK
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ inputs.GITHUB_TOKEN }}
+        path-to-lcov: ${{ github.workspace }}/coverage/coverage.net7.0.info
+        flag-name: run-net7.0
         parallel: true
 
     - name: code coverage - coveralls (3 of 3)

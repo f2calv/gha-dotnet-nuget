@@ -6,10 +6,10 @@ This GitHub Action builds multi-targetted .NET libraries and pushes the packages
 
 Note: `<IsPackable>true</IsPackable>` is a default setting in a csproj file, so be sure to disable IsPackable for other projects via a `Directory.Builds.Props` file else these other projects will be pushed to the NuGet feed as well!
 
-Currently configured for the LTS versions;
+Currently configured for these .NET versions;
 
-- .NET Core 3.1
-- .NET 6.0
+- .NET 6.0.x
+- .NET 7.0.x
 
 ## Examples
 
