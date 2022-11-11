@@ -101,7 +101,7 @@ runs:
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ inputs.GITHUB_TOKEN }}
-        path-to-lcov: ${{ github.workspace }}/coverage/coverage.net6.0.info
+        path-to-lcov: ${{ github.workspace }}/coverage/coverage.net6.0.json
         flag-name: run-net6.0
         parallel: true
 
@@ -109,7 +109,7 @@ runs:
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ inputs.GITHUB_TOKEN }}
-        path-to-lcov: ${{ github.workspace }}/coverage/coverage.net7.0.info
+        path-to-lcov: ${{ github.workspace }}/coverage/coverage.net7.0.json
         flag-name: run-net7.0
         parallel: true
 
