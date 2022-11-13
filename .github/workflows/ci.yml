@@ -1,0 +1,53 @@
+name: gha
+
+on:
+  workflow_dispatch:
+    inputs:
+      PublishPreview:
+        type: string
+        description: Publish preview branch?
+        required: true
+        default: "false"
+  push:
+    branches-ignore:
+      - "preview/**"
+    paths-ignore:
+      - LICENSE
+      - README.md
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: gitversion
+        shell: pwsh
+        id: gitversion
+        run: |
+          dotnet tool update -g GitVersion.Tool
+          $GitVersion = dotnet-gitversion ${{ github.workspace }} /nofetch | ConvertFrom-Json
+          Write-Host "SemVer=$($GitVersion.SemVer)"
+          Write-Host "::set-output name=SemVer::$($GitVersion.SemVer)"
+          Write-Host "FullSemVer=$($GitVersion.FullSemVer)"
+          Write-Host "::set-output name=FullSemVer::$($GitVersion.FullSemVer)"
+
+      - name: gh release view
+        shell: pwsh
+        id: check_exists
+        run: |
+          & ./.scripts/Invoke-PriorReleaseCheck.ps1 `
+            -SemVer ${{ steps.gitversion.outputs.SemVer }} `
+            -FullSemVer ${{ steps.gitversion.outputs.SemVer }}
+        env:
+          GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
+
+      - name: create release ${{ steps.gitversion.outputs.FullSemVer }}
+        uses: softprops/action-gh-release@v1
+        if: |
+          steps.check_exists.outputs.DoPush == 'true'
+            && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || github.event.inputs.PublishPreview == 'true')
+        with:
+          tag_name: ${{ steps.gitversion.outputs.FullSemVer }}
+          name: ${{ steps.gitversion.outputs.FullSemVer }}
