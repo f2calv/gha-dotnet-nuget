@@ -26,9 +26,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: gitversion
+      - name: gitversion2
         shell: pwsh
-        id: gitversion
+        id: gitversion2
         run: |
           dotnet tool update -g GitVersion.Tool
           $GitVersion = dotnet-gitversion ${{ github.workspace }} /nofetch | ConvertFrom-Json
