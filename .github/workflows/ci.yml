@@ -43,13 +43,12 @@ jobs:
         shell: pwsh
         id: check_exists
         run: |
-          & ./.scripts/Invoke-PriorReleaseCheck.ps1 -SemVer ${{ steps.gitversion.outputs.SemVer }} -FullSemVer ${{ steps.gitversion.outputs.SemVer }}
-          Write-Host "umm..."
-          $DoPush = &"./.scripts/Invoke-PriorReleaseCheck.ps1" -SemVer ${{ steps.gitversion.outputs.SemVer }} -FullSemVer ${{ steps.gitversion.outputs.SemVer }}
-          Write-Host "DoPush=$DoPush"
+          $DoPush = &"./.scripts/Invoke-PriorReleaseCheck.ps1" `
+            -SemVer ${{ steps.gitversion.outputs.SemVer }} `
+            -FullSemVer ${{ steps.gitversion.outputs.SemVer }}
           echo "DoPush=$DoPush" >> $env:GITHUB_OUTPUT
 
-      - name: create release ${{ steps.gitversion.outputs.FullSemVer }}
+      - name: create release
         uses: softprops/action-gh-release@v1
         if: |
           steps.check_exists.outputs.DoPush == 'true'
