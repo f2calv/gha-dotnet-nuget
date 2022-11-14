@@ -1,7 +1,5 @@
 # GitHub Action: .NET Build/Test/Pack/Publish
 
-> Note: this a beta action so prone to change, use with caution.
-
 This GitHub Action builds multi-targetted .NET libraries and pushes the packages to both the official NuGet and also the GitHub Actions packages feeds. This action is expecting to find a single .NET solution file (.sln) in the base of your repository - and one or more class libraries with `<IsPackable>true</IsPackable>` set in the csproj file.
 
 Note: `<IsPackable>true</IsPackable>` is a default setting in a csproj file, so be sure to disable IsPackable for other projects via a `Directory.Builds.Props` file else these other projects will be pushed to the NuGet feed as well!
@@ -34,7 +32,6 @@ steps:
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     NUGET_API_KEY: ${{ secrets.GITHUB_TOKEN }}
     BuildConfiguration: Release
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 - run: |
     echo "SemVer=${{ steps.dotnet.outputs.SemVer }}"
