@@ -32,7 +32,7 @@ jobs:
 
       - name: testget
         shell: pwsh
-        run: Write-Host "$env:test_value"
+        run: Write-Host "value = $($env:test_value)"
 
       - name: gitversion2
         shell: pwsh
