@@ -25,9 +25,9 @@ Write-Host "Previous release`t:`t$priorRelease"
 
 if (($SemVer -eq $priorRelease) -or ($FullSemVer -eq $priorRelease)) {
     Write-Host "Release already exists, continuing build/test/pack but skipping push..."
-    Write-Host "::set-output name=DoPush::false"
+    Write-Host "DoPush=false" >> $env:GITHUB_OUTPUT
 }
 else {
     Write-Host "Release not found, we are ok to build/test/pack/push the new package(s)..."
-    Write-Host "::set-output name=DoPush::true"
+    Write-Host "DoPush=true" >> $env:GITHUB_OUTPUT
 }
