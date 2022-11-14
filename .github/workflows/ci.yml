@@ -43,11 +43,11 @@ jobs:
         run: |
           & ./.scripts/Invoke-PriorReleaseCheck.ps1 -SemVer ${{ steps.gitversion.outputs.SemVer }} -FullSemVer ${{ steps.gitversion.outputs.SemVer }}
           Write-Host "umm..."
-          $DoPush = &"./.scripts/Invoke-PriorReleaseCheck.ps1 -SemVer ${{ steps.gitversion.outputs.SemVer }} -FullSemVer ${{ steps.gitversion.outputs.SemVer }}"
+          $DoPush = & './.scripts/Invoke-PriorReleaseCheck.ps1 -SemVer ${{ steps.gitversion.outputs.SemVer }} -FullSemVer ${{ steps.gitversion.outputs.SemVer }}'
           Write-Host "DoPush=$DoPush"
           echo "DoPush=$DoPush" >> $env:GITHUB_OUTPUT
         env:
-          GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ inputs.GITHUB_TOKEN }}
 
       - name: create release ${{ steps.gitversion.outputs.FullSemVer }}
         uses: softprops/action-gh-release@v1
