@@ -33,9 +33,9 @@ jobs:
           dotnet tool update -g GitVersion.Tool
           $GitVersion = dotnet-gitversion ${{ github.workspace }} /nofetch | ConvertFrom-Json
           Write-Host "SemVer=$($GitVersion.SemVer)"
-          echo "SemVer=$($GitVersion.SemVer)" >> $GITHUB_OUTPUT
+          echo "SemVer=$($GitVersion.SemVer)" >> $env:GITHUB_OUTPUT
           Write-Host "FullSemVer=$($GitVersion.FullSemVer)"
-          echo "FullSemVer=$($GitVersion.FullSemVer)" >> $GITHUB_OUTPUT
+          echo "FullSemVer=$($GitVersion.FullSemVer)" >> $env:GITHUB_OUTPUT
 
       - name: gitversion
         shell: pwsh
