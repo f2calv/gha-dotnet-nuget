@@ -27,6 +27,7 @@ jobs:
           fetch-depth: 0
 
       - name: testset
+        id: testset
         shell: pwsh
         run: echo "test_value=123" >> $env:GITHUB_OUTPUT
 
