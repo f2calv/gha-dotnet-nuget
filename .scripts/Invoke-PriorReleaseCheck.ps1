@@ -25,9 +25,9 @@ Write-Host "Previous release`t:`t$priorRelease"
 
 if (($SemVer -eq $priorRelease) -or ($FullSemVer -eq $priorRelease)) {
     Write-Host "Release already exists, continuing build/test/pack but skipping push..."
-    Write-Host "::set-output name=DoPush::false"
+    return $false
 }
 else {
     Write-Host "Release not found, we are ok to build/test/pack/push the new package(s)..."
-    Write-Host "::set-output name=DoPush::true"
+    return $true
 }
