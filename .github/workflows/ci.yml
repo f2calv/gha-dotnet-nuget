@@ -20,6 +20,8 @@ on:
 
 jobs:
   release:
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -46,8 +48,6 @@ jobs:
           $DoPush = & './.scripts/Invoke-PriorReleaseCheck.ps1 -SemVer ${{ steps.gitversion.outputs.SemVer }} -FullSemVer ${{ steps.gitversion.outputs.SemVer }}'
           Write-Host "DoPush=$DoPush"
           echo "DoPush=$DoPush" >> $env:GITHUB_OUTPUT
-        env:
-          GH_TOKEN: ${{ inputs.GITHUB_TOKEN }}
 
       - name: create release ${{ steps.gitversion.outputs.FullSemVer }}
         uses: softprops/action-gh-release@v1
