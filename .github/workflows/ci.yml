@@ -41,9 +41,10 @@ jobs:
         shell: pwsh
         id: check_exists
         run: |
-          & ./.scripts/Invoke-PriorReleaseCheck.ps1 `
+          $DoPush = & ./.scripts/Invoke-PriorReleaseCheck.ps1 `
             -SemVer ${{ steps.gitversion.outputs.SemVer }} `
             -FullSemVer ${{ steps.gitversion.outputs.SemVer }}
+          echo "DoPush=$DoPush" >> $env:GITHUB_OUTPUT
         env:
           GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
 

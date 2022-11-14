@@ -71,17 +71,18 @@ runs:
         dotnet tool update -g GitVersion.Tool
         $GitVersion = dotnet-gitversion ${{ github.workspace }} /nofetch | ConvertFrom-Json
         Write-Host "SemVer=$($GitVersion.SemVer)"
-        Write-Host "SemVer=$($GitVersion.SemVer)" >> $GITHUB_OUTPUT
+        echo "SemVer=$($GitVersion.SemVer)" >> $env:GITHUB_OUTPUT
         Write-Host "FullSemVer=$($GitVersion.FullSemVer)"
-        Write-Host "FullSemVer=$($GitVersion.FullSemVer)" >> $GITHUB_OUTPUT
+        echo "FullSemVer=$($GitVersion.FullSemVer)" >> $env:GITHUB_OUTPUT
 
     - name: gh release view
       shell: pwsh
       id: check_exists
       run: |
-        & $env:GITHUB_ACTION_PATH/.scripts/Invoke-PriorReleaseCheck.ps1 `
+        $DoPush = & ./.scripts/Invoke-PriorReleaseCheck.ps1 `
           -SemVer ${{ steps.gitversion.outputs.SemVer }} `
           -FullSemVer ${{ steps.gitversion.outputs.SemVer }}
+        echo "DoPush=$DoPush" >> $env:GITHUB_OUTPUT
       env:
         GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
 
