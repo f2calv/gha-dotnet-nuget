@@ -75,7 +75,7 @@ runs:
         Write-Host "FullSemVer=$($GitVersion.FullSemVer)"
         echo "FullSemVer=$($GitVersion.FullSemVer)" >> $env:GITHUB_OUTPUT
 
-    - uses: f2calv/gha-check-release-exists@v1.0.4
+    - uses: f2calv/gha-check-release-exists@v1.0.5
       id: check-release-exists
       with:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
