@@ -16,7 +16,7 @@ Minimal usage example;
 ```yaml
 steps:
 
-- uses: f2calv/gha-dotnet-nuget@main
+- uses: f2calv/gha-dotnet-nuget@v1
   with:
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
@@ -26,7 +26,7 @@ Complete usage example;
 ```yaml
 steps:
 
-- uses: f2calv/gha-dotnet-nuget@main
+- uses: f2calv/gha-dotnet-nuget@v1
   id: dotnet
   with:
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
