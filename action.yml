@@ -75,16 +75,11 @@ runs:
         Write-Host "FullSemVer=$($GitVersion.FullSemVer)"
         echo "FullSemVer=$($GitVersion.FullSemVer)" >> $env:GITHUB_OUTPUT
 
-    - name: gh release view
-      shell: pwsh
-      id: check_exists
-      run: |
-        $DoPush = &"./.scripts/Invoke-PriorReleaseCheck.ps1" `
-          -SemVer ${{ steps.gitversion.outputs.SemVer }} `
-          -FullSemVer ${{ steps.gitversion.outputs.SemVer }}
-        echo "DoPush=$DoPush" >> $env:GITHUB_OUTPUT
-      env:
-        GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
+    - uses: f2calv/gha-check-release-exists@v1.0.4
+      id: check-release-exists
+      with:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        ReleaseName: ${{ steps.gitversion.outputs.SemVer }}
 
     - name: dotnet restore
       shell: bash
