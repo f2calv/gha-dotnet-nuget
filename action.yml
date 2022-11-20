@@ -16,6 +16,10 @@ inputs:
   PublishPreview:
     description: Publish preview branch?
     required: false
+  CodeCoverage:
+    description: Default is 'true'
+    default: "true"
+    required: false
 
 outputs:
   SemVer:
@@ -94,6 +98,7 @@ runs:
       run: dotnet test -c ${{ steps.setvars.outputs.BuildConfiguration }} --nologo --no-restore --no-build -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=${{ github.workspace }}/coverage/
 
     - name: code coverage - coveralls (1 of 3) - .NET 6.x SDK
+      if: github.event.inputs.CodeCoverage == 'true'
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ inputs.GITHUB_TOKEN }}
@@ -102,6 +107,7 @@ runs:
         parallel: true
 
     - name: code coverage - coveralls (2 of 3) - .NET 7.x SDK
+      if: github.event.inputs.CodeCoverage == 'true'
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ inputs.GITHUB_TOKEN }}
@@ -110,6 +116,7 @@ runs:
         parallel: true
 
     - name: code coverage - coveralls (3 of 3)
+      if: github.event.inputs.CodeCoverage == 'true'
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ inputs.GITHUB_TOKEN }}
@@ -126,6 +133,7 @@ runs:
 
     - name: reportgenerator
       shell: bash
+      if: github.event.inputs.CodeCoverage == 'true'
       run: |
         dotnet tool update -g dotnet-reportgenerator-globaltool
         reportgenerator -reports:./coverage/coverage.*.info \
@@ -134,6 +142,7 @@ runs:
           -tag:${{ github.run_number }}_${{ github.run_id }}
 
     - name: code coverage - upload-artifact
+      if: github.event.inputs.CodeCoverage == 'true'
       uses: actions/upload-artifact@v2
       with:
         name: coveragereport
