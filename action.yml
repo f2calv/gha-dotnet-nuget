@@ -78,7 +78,7 @@ runs:
     - uses: f2calv/gha-check-release-exists@v1
       id: check-release-exists
       with:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
         ReleaseName: ${{ steps.gitversion.outputs.SemVer }}
 
     - name: dotnet restore
