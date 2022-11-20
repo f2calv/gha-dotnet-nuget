@@ -54,5 +54,5 @@ jobs:
           steps.check_exists.outputs.DoPush == 'true'
             && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || github.event.inputs.PublishPreview == 'true')
         with:
-          tag_name: ${{ steps.gitversion.outputs.FullSemVer }}
+          tag_name: v${{ steps.gitversion.outputs.FullSemVer }}
           name: ${{ steps.gitversion.outputs.FullSemVer }}
