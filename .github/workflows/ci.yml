@@ -20,39 +20,4 @@ on:
 
 jobs:
   release:
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - name: gitversion
-        shell: pwsh
-        id: gitversion
-        run: |
-          dotnet tool update -g GitVersion.Tool
-          $GitVersion = dotnet-gitversion ${{ github.workspace }} /nofetch | ConvertFrom-Json
-          Write-Host "SemVer=$($GitVersion.SemVer)"
-          echo "SemVer=$($GitVersion.SemVer)" >> $env:GITHUB_OUTPUT
-          Write-Host "FullSemVer=$($GitVersion.FullSemVer)"
-          echo "FullSemVer=$($GitVersion.FullSemVer)" >> $env:GITHUB_OUTPUT
-
-      - name: gh release view
-        shell: pwsh
-        id: check_exists
-        run: |
-          $DoPush = &"./.scripts/Invoke-PriorReleaseCheck.ps1" `
-            -SemVer ${{ steps.gitversion.outputs.SemVer }} `
-            -FullSemVer ${{ steps.gitversion.outputs.SemVer }}
-          echo "DoPush=$DoPush" >> $env:GITHUB_OUTPUT
-
-      - name: create release
-        uses: softprops/action-gh-release@v1
-        if: |
-          steps.check_exists.outputs.DoPush == 'true'
-            && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || github.event.inputs.PublishPreview == 'true')
-        with:
-          tag_name: ${{ steps.gitversion.outputs.FullSemVer }}
-          name: ${{ steps.gitversion.outputs.FullSemVer }}
+    uses: f2calv/gha-workflows/.github/workflows/gha-release-versioning.yml@v1
