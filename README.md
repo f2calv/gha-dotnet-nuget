@@ -41,11 +41,11 @@ steps:
 
 Here are fully working examples of this action in active use in my own public repositories;
 
-- [gha-dotnet-nuget-test](https://github.com/f2calv/gha-dotnet-nuget-test) - uses this action via a [re-usable workflow](https://github.com/f2calv/gha-workflows/blob/main/.github/workflows/dotnet-publish-nuget-v1.yml) (this project can be used as a template of best practise if required)
+- [gha-dotnet-nuget-test](https://github.com/f2calv/gha-dotnet-nuget-test) - uses this action via a [re-usable workflow](https://github.com/f2calv/gha-workflows/blob/main/.github/workflows/dotnet-publish-nuget.yml) (this project can be used as a template of best practise if required)
 - [CasCap.Common](https://github.com/f2calv/gha-dotnet-nuget-test) - uses this action [directly](https://github.com/f2calv/CasCap.Common/blob/main/.github/workflows/ci.yml).
-- [CasCap.Apis.GooglePhotos](https://github.com/f2calv/CasCap.Apis.GooglePhotos) - uses this action via a [re-usable workflow](https://github.com/f2calv/gha-workflows/blob/main/.github/workflows/dotnet-publish-nuget-v1.yml).
-- [CasCap.GooglePhotosCli](https://github.com/f2calv/CasCap.Apis.GooglePhotos) - uses this action via a [re-usable workflow](https://github.com/f2calv/gha-workflows/blob/main/.github/workflows/dotnet-publish-nuget-v1.yml).
-- [yamlizr](https://github.com/f2calv/yamlizr) - uses this action via a [re-usable workflow](https://github.com/f2calv/gha-workflows/blob/main/.github/workflows/dotnet-publish-nuget-v1.yml).
+- [CasCap.Apis.GooglePhotos](https://github.com/f2calv/CasCap.Apis.GooglePhotos) - uses this action via a [re-usable workflow](https://github.com/f2calv/gha-workflows/blob/main/.github/workflows/dotnet-publish-nuget.yml).
+- [CasCap.GooglePhotosCli](https://github.com/f2calv/CasCap.Apis.GooglePhotos) - uses this action via a [re-usable workflow](https://github.com/f2calv/gha-workflows/blob/main/.github/workflows/dotnet-publish-nuget.yml).
+- [yamlizr](https://github.com/f2calv/yamlizr) - uses this action via a [re-usable workflow](https://github.com/f2calv/gha-workflows/blob/main/.github/workflows/dotnet-publish-nuget.yml).
 
 ## Inputs
 
