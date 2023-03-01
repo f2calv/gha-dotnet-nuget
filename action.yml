@@ -154,7 +154,7 @@ runs:
       run: |
         if [[ "${{ inputs.NUGET_API_KEY }}" != "" ]]; \
         then
-          dotnet nuget push ${{ github.workspace }}/src/**/*.nupkg --skip-duplicate -k ${{ inputs.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
+          dotnet nuget push ${{ github.workspace }}/src/**/*.nupkg --skip-duplicate -k ${{ inputs.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json --skip-duplicate
         else
           echo "::warning title=NUGET_API_KEY::NUGET_API_KEY is missing from secrets, skipping push to api.nuget.org."
         fi
