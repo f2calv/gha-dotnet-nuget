@@ -173,8 +173,10 @@ runs:
 
     - name: create release ${{ steps.gitversion.outputs.FullSemVer }}
       uses: softprops/action-gh-release@v1
+      #Note: always attempt to create a release if primary nuget push has succeeded (i.e. if gpr push has failed)
       if: |
-        steps.check-release-exists.outputs.ReleaseExists == 'false'
+        always()
+        && steps.check-release-exists.outputs.ReleaseExists == 'false'
           && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || github.event.inputs.PublishPreview == 'true')
       with:
         tag_name: ${{ steps.gitversion.outputs.FullSemVer }}
