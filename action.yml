@@ -35,9 +35,15 @@ outputs:
 runs:
   using: composite
   steps:
+
     - uses: actions/checkout@v3
       with:
         fetch-depth: 0
+
+    - uses: actions/checkout@v3
+      with:
+        repository: f2calv/CasCap.Common
+        #path: CasCap.Common
 
     - name: set vars
       shell: bash
