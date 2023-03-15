@@ -83,7 +83,9 @@ runs:
 
     - name: dotnet restore
       shell: bash
-      run: dotnet restore --verbosity minimal --configfile nuget.config /p:Configuration=${{ steps.setvars.outputs.BuildConfiguration }}
+      run: dotnet restore --verbosity minimal --configfile nuget.config
+      env:
+        NUGET_RESTORE_MSBUILD_ARGS: /p:Configuration=${{ steps.setvars.outputs.BuildConfiguration }}
 
     - name: dotnet build
       shell: bash
