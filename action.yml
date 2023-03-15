@@ -88,7 +88,6 @@ runs:
         #https://github.com/NuGet/Home/issues/7575#issuecomment-443801131
         NUGET_RESTORE_MSBUILD_ARGS: /p:Configuration=${{ steps.setvars.outputs.BuildConfiguration }}
 
-
     - name: dotnet build
       shell: bash
       run: dotnet build -c ${{ steps.setvars.outputs.BuildConfiguration }} --nologo --no-restore -p:Version='${{ steps.gitversion.outputs.SemVer }}' -p:SourceRevisionId=${{ github.sha }}
