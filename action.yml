@@ -85,8 +85,8 @@ runs:
       shell: bash
       run: dotnet restore --verbosity minimal --configfile nuget.config
       env:
+        #https://github.com/NuGet/Home/issues/7575#issuecomment-443801131
         NUGET_RESTORE_MSBUILD_ARGS: /p:Configuration=${{ steps.setvars.outputs.BuildConfiguration }}
-
 
     - name: dotnet build
       shell: bash
