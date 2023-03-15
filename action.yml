@@ -57,8 +57,8 @@ runs:
 
     - run: |
         ls -lsa
-        cd /home/runner/work/CasCap.Apis.Azure/
-        ls -lsa
+        # cd /home/runner/work/CasCap.Apis.Azure/
+        # ls -lsa
       shell: bash
 
     - name: set vars
