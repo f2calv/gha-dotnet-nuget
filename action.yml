@@ -55,6 +55,10 @@ runs:
       with:
         fetch-depth: 0
 
+    - run: |
+        ls -lsa
+      shell: bash
+
     - name: set vars
       shell: bash
       id: setvars
