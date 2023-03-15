@@ -20,6 +20,10 @@ inputs:
     description: Default is 'true'
     default: "true"
     required: false
+  MultiCheckoutRepoName:
+    description: Default is 'true'
+    default: "true"
+    required: false
 
 outputs:
   SemVer:
@@ -39,9 +43,11 @@ runs:
     - uses: actions/checkout@v3
       with:
         repository: f2calv/CasCap.Common
-        path: CasCap.Common
 
-    - run: mv $GITHUB_WORKSPACE/CasCap.Common ..
+    - run: |
+        ls -lsa
+        mv CasCap.Common ..
+        ls -lsa
       shell: bash
 
     - uses: actions/checkout@v3
