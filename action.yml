@@ -20,9 +20,9 @@ inputs:
     description: Default is 'true'
     default: "true"
     required: false
-  MultiCheckoutRepoName:
-    description: Default is 'true'
-    default: "true"
+  OverrideDotNetRestore:
+    description: Override 'dotnet restore' command (i.e. to skip Debug NuGet dependencies).
+    default: ''
     required: false
 
 outputs:
@@ -42,24 +42,7 @@ runs:
 
     - uses: actions/checkout@v3
       with:
-        repository: f2calv/CasCap.Common
-        path: CasCap.Common
-
-    - run: |
-        ls -lsa
-        mv CasCap.Common ..
-        ls -lsa
-      shell: bash
-
-    - uses: actions/checkout@v3
-      with:
         fetch-depth: 0
-
-    - run: |
-        ls -lsa
-        # cd /home/runner/work/CasCap.Apis.Azure/
-        # ls -lsa
-      shell: bash
 
     - name: set vars
       shell: bash
@@ -106,9 +89,12 @@ runs:
     - name: dotnet restore
       shell: bash
       run: dotnet restore --verbosity minimal --configfile nuget.config
-      env:
-        #https://github.com/NuGet/Home/issues/7575#issuecomment-443801131
-        NUGET_RESTORE_MSBUILD_ARGS: /p:Configuration=${{ steps.setvars.outputs.BuildConfiguration }}
+      if: github.event.inputs.OverrideDotNetRestore == ''
+      
+    - name: dotnet restore (override)
+      shell: bash
+      run: ${{ inputs.DotNetRestoreCmd }}
+      if: github.event.inputs.OverrideDotNetRestore != ''
 
     - name: dotnet build
       shell: bash
