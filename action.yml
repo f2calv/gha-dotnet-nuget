@@ -20,9 +20,9 @@ inputs:
     description: Default is 'true'
     default: "true"
     required: false
-  OverrideDotNetRestore:
-    description: Override 'dotnet restore' command (i.e. to skip Debug NuGet dependencies).
-    default: ''
+  SkipDotNetRestore:
+    description: Skip 'dotnet restore' command (i.e. to skip 'Debug' NuGet dependencies).
+    default: "false"
     required: false
 
 outputs:
@@ -87,20 +87,22 @@ runs:
         ReleaseName: ${{ steps.gitversion.outputs.SemVer }}
 
     - name: dotnet restore
+      if: github.event.inputs.SkipDotNetRestore == 'false'
       shell: bash
-      run: |
-        if [[ "${{ inputs.OverrideDotNetRestore }}" != "" ]]; \
-        then
-          ${{ inputs.OverrideDotNetRestore }}
-        else
-          dotnet restore --verbosity minimal --configfile nuget.config
-        fi
+      run: dotnet restore --verbosity minimal --configfile nuget.config
       env:
+        #Note: below seems to have no effect when using a .SLN file, sigh :/
         NUGET_RESTORE_MSBUILD_ARGS: /p:Configuration=${{ steps.setvars.outputs.BuildConfiguration }}
 
     - name: dotnet build
       shell: bash
-      run: dotnet build -c ${{ steps.setvars.outputs.BuildConfiguration }} --nologo --no-restore -p:Version='${{ steps.gitversion.outputs.SemVer }}' -p:SourceRevisionId=${{ github.sha }}
+      run: |
+        if [[ "${{ inputs.SkipDotNetRestore }}" == "false" ]]; \
+        then
+          dotnet build -c ${{ steps.setvars.outputs.BuildConfiguration }} --nologo --no-restore -p:Version='${{ steps.gitversion.outputs.SemVer }}' -p:SourceRevisionId=${{ github.sha }}
+        else
+          dotnet build -c ${{ steps.setvars.outputs.BuildConfiguration }} --nologo -p:Version='${{ steps.gitversion.outputs.SemVer }}' -p:SourceRevisionId=${{ github.sha }}
+        fi
 
     - name: dotnet test
       shell: bash
