@@ -97,6 +97,7 @@ runs:
         then
           ${{ inputs.OverrideDotNetRestore }}
         else
+          echo "test=${{ inputs.OverrideDotNetRestore }}"
           dotnet restore --verbosity minimal --configfile nuget.config
         fi
       env:
