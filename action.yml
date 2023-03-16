@@ -86,7 +86,7 @@ runs:
         GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
         ReleaseName: ${{ steps.gitversion.outputs.SemVer }}
 
-    - name: dotnet restore
+    - name: dotnet restore (wtf)
       shell: bash
       run: dotnet restore --verbosity minimal --configfile nuget.config
       env:
