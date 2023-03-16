@@ -91,12 +91,12 @@ runs:
       run: dotnet restore --verbosity minimal --configfile nuget.config
       env:
         NUGET_RESTORE_MSBUILD_ARGS: /p:Configuration=${{ steps.setvars.outputs.BuildConfiguration }}
-      #if: github.event.inputs.OverrideDotNetRestore == ''
-      
-    # - name: dotnet restore (override)
-    #   shell: bash
-    #   run: ${{ inputs.DotNetRestoreCmd }}
-    #   if: github.event.inputs.OverrideDotNetRestore != ''
+      if: ${{ success() && github.event.inputs.OverrideDotNetRestore == '' }}
+  
+    - name: dotnet restore (override)
+      shell: bash
+      run: ${{ inputs.DotNetRestoreCmd }}
+      if: ${{ success() && github.event.inputs.OverrideDotNetRestore != '' }}
 
     - name: dotnet build
       shell: bash
