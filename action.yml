@@ -86,18 +86,13 @@ runs:
         GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
         ReleaseName: ${{ steps.gitversion.outputs.SemVer }}
 
-    - name: dotnet restore (wtf)
-      shell: bash
-      run: dotnet restore --verbosity minimal --configfile nuget.config
-
-    - name: dotnet restore (test)
+    - name: dotnet restore
       shell: bash
       run: |
         if [[ "${{ inputs.OverrideDotNetRestore }}" != "" ]]; \
         then
           ${{ inputs.OverrideDotNetRestore }}
         else
-          echo "test=${{ inputs.OverrideDotNetRestore }}"
           dotnet restore --verbosity minimal --configfile nuget.config
         fi
       env:
