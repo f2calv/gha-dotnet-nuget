@@ -20,6 +20,10 @@ inputs:
     description: Default is 'true'
     default: "true"
     required: false
+  SolutionNameOverride:
+    description: Override Visual Studio Solution file, e.g. with a specific .Release version.
+    default: ""
+    required: false
 
 outputs:
   SemVer:
@@ -81,18 +85,18 @@ runs:
         GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
         ReleaseName: ${{ steps.gitversion.outputs.SemVer }}
 
-    - name: dotnet restore
+    - name: dotnet restore ${{ inputs.SolutionNameOverride }}
       shell: bash
       run: dotnet restore --verbosity minimal --configfile nuget.config
       env:
         #https://github.com/NuGet/Home/issues/7575#issuecomment-443801131
         NUGET_RESTORE_MSBUILD_ARGS: /p:Configuration=${{ steps.setvars.outputs.BuildConfiguration }}
 
-    - name: dotnet build
+    - name: dotnet build ${{ inputs.SolutionNameOverride }}
       shell: bash
       run: dotnet build -c ${{ steps.setvars.outputs.BuildConfiguration }} --nologo --no-restore -p:Version='${{ steps.gitversion.outputs.SemVer }}' -p:SourceRevisionId=${{ github.sha }}
 
-    - name: dotnet test
+    - name: dotnet test ${{ inputs.SolutionNameOverride }}
       shell: bash
       run: dotnet test -c ${{ steps.setvars.outputs.BuildConfiguration }} --nologo --no-restore --no-build -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=${{ github.workspace }}/coverage/
 
