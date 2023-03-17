@@ -85,18 +85,18 @@ runs:
         GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
         ReleaseName: ${{ steps.gitversion.outputs.SemVer }}
 
-    - name: dotnet restore ${{ inputs.SolutionNameOverride }}
+    - name: dotnet restore
       shell: bash
       run: dotnet restore ${{ inputs.SolutionNameOverride }} --verbosity minimal --configfile nuget.config
       env:
         #https://github.com/NuGet/Home/issues/7575#issuecomment-443801131
         NUGET_RESTORE_MSBUILD_ARGS: /p:Configuration=${{ steps.setvars.outputs.BuildConfiguration }}
 
-    - name: dotnet build ${{ inputs.SolutionNameOverride }}
+    - name: dotnet build
       shell: bash
       run: dotnet build ${{ inputs.SolutionNameOverride }} -c ${{ steps.setvars.outputs.BuildConfiguration }} --nologo --no-restore -p:Version='${{ steps.gitversion.outputs.SemVer }}' -p:SourceRevisionId=${{ github.sha }}
 
-    - name: dotnet test ${{ inputs.SolutionNameOverride }}
+    - name: dotnet test
       shell: bash
       run: dotnet test ${{ inputs.SolutionNameOverride }} -c ${{ steps.setvars.outputs.BuildConfiguration }} --nologo --no-restore --no-build -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=${{ github.workspace }}/coverage/
 
