@@ -87,18 +87,18 @@ runs:
 
     - name: dotnet restore ${{ inputs.SolutionNameOverride }}
       shell: bash
-      run: dotnet restore --verbosity minimal --configfile nuget.config
+      run: dotnet restore ${{ inputs.SolutionNameOverride }} --verbosity minimal --configfile nuget.config
       env:
         #https://github.com/NuGet/Home/issues/7575#issuecomment-443801131
         NUGET_RESTORE_MSBUILD_ARGS: /p:Configuration=${{ steps.setvars.outputs.BuildConfiguration }}
 
     - name: dotnet build ${{ inputs.SolutionNameOverride }}
       shell: bash
-      run: dotnet build -c ${{ steps.setvars.outputs.BuildConfiguration }} --nologo --no-restore -p:Version='${{ steps.gitversion.outputs.SemVer }}' -p:SourceRevisionId=${{ github.sha }}
+      run: dotnet build ${{ inputs.SolutionNameOverride }} -c ${{ steps.setvars.outputs.BuildConfiguration }} --nologo --no-restore -p:Version='${{ steps.gitversion.outputs.SemVer }}' -p:SourceRevisionId=${{ github.sha }}
 
     - name: dotnet test ${{ inputs.SolutionNameOverride }}
       shell: bash
-      run: dotnet test -c ${{ steps.setvars.outputs.BuildConfiguration }} --nologo --no-restore --no-build -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=${{ github.workspace }}/coverage/
+      run: dotnet test ${{ inputs.SolutionNameOverride }} -c ${{ steps.setvars.outputs.BuildConfiguration }} --nologo --no-restore --no-build -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=${{ github.workspace }}/coverage/
 
     - name: code coverage - coveralls (1 of 3) - .NET 6.x SDK
       if: github.event.inputs.CodeCoverage == 'true'
