@@ -68,7 +68,7 @@ runs:
         useConfigFile: true
         additionalArguments: /nofetch
 
-    - uses: f2calv/gha-check-release-exists@v1
+    - uses: f2calv/gha-check-release-exists@v2
       id: check-release-exists
       with:
         GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
