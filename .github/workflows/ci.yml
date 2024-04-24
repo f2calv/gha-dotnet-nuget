@@ -12,6 +12,7 @@ on:
     branches-ignore:
       - "preview/**"
     paths-ignore:
+      - .github/dependabot.yaml
       - LICENSE
       - README.md
   pull_request:

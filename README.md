@@ -6,8 +6,7 @@ Note: `<IsPackable>true</IsPackable>` is a default setting in a csproj file, so 
 
 Currently configured for these .NET versions;
 
-- .NET 6.0.x
-- .NET 7.0.x
+- .NET 8.0.x
 
 ## Examples
 
