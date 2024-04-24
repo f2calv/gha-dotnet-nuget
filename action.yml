@@ -39,7 +39,7 @@ outputs:
 runs:
   using: composite
   steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
@@ -50,20 +50,18 @@ runs:
         BuildConfiguration=${{ inputs.BuildConfiguration }}
         echo "BuildConfiguration=${BuildConfiguration:-"Release"}" >> $GITHUB_OUTPUT
 
-    - uses: actions/setup-dotnet@v3
+    - uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: |
-          6.0.x
-          7.0.x
+        dotnet-version: 8.0.x
 
     - name: gitversion (1 of 2)
-      uses: gittools/actions/gitversion/setup@v0
+      uses: gittools/actions/gitversion/setup@v1
       with:
         versionSpec: 5.x
 
     - name: gitversion (2 of 2)
       id: gitversion
-      uses: gittools/actions/gitversion/execute@v0
+      uses: gittools/actions/gitversion/execute@v1
       with:
         useConfigFile: true
         additionalArguments: /nofetch
@@ -89,25 +87,16 @@ runs:
       shell: bash
       run: dotnet test ${{ inputs.SolutionNameOverride }} -c ${{ steps.setvars.outputs.BuildConfiguration }} --nologo --no-restore --no-build -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=${{ github.workspace }}/coverage/
 
-    - name: code coverage - coveralls (1 of 3) - .NET 6.x SDK
+    - name: code coverage - coveralls (1 of 2) - .NET 8.x SDK
       if: github.event.inputs.CodeCoverage == 'true'
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ inputs.GITHUB_TOKEN }}
-        path-to-lcov: ${{ github.workspace }}/coverage/coverage.net6.0.info
-        flag-name: run-net6.0
+        path-to-lcov: ${{ github.workspace }}/coverage/coverage.net8.0.info
+        flag-name: run-net8.0
         parallel: true
 
-    - name: code coverage - coveralls (2 of 3) - .NET 7.x SDK
-      if: github.event.inputs.CodeCoverage == 'true'
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ inputs.GITHUB_TOKEN }}
-        path-to-lcov: ${{ github.workspace }}/coverage/coverage.net7.0.info
-        flag-name: run-net7.0
-        parallel: true
-
-    - name: code coverage - coveralls (3 of 3)
+    - name: code coverage - coveralls (2 of 2)
       if: github.event.inputs.CodeCoverage == 'true'
       uses: coverallsapp/github-action@master
       with:
