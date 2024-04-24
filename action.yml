@@ -124,7 +124,7 @@ runs:
 
     - name: code coverage - upload-artifact
       if: github.event.inputs.CodeCoverage == 'true'
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: coveragereport
         path: coveragereport
