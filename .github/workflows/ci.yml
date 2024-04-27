@@ -1,4 +1,4 @@
-name: gha
+name: ci
 
 on:
   workflow_dispatch:
@@ -12,7 +12,7 @@ on:
     branches-ignore:
       - "preview/**"
     paths-ignore:
-      - .github/dependabot.yaml
+      - .github/dependabot.yml
       - LICENSE
       - README.md
   pull_request:
