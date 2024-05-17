@@ -2,12 +2,6 @@ name: ci
 
 on:
   workflow_dispatch:
-    inputs:
-      PublishPreview:
-        type: string
-        description: Publish preview branch?
-        required: true
-        default: "false"
   push:
     branches-ignore:
       - "preview/**"
