@@ -74,7 +74,7 @@ runs:
 
     - name: dotnet restore
       shell: bash
-      run: dotnet restore ${{ inputs.SolutionNameOverride }} --verbosity minimal --configfile nuget.config
+      run: dotnet restore ${{ inputs.SolutionNameOverride }} --verbosity minimal
       env:
         #https://github.com/NuGet/Home/issues/7575#issuecomment-443801131
         NUGET_RESTORE_MSBUILD_ARGS: /p:Configuration=${{ steps.setvars.outputs.BuildConfiguration }}
