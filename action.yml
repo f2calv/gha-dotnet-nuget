@@ -87,21 +87,12 @@ runs:
       shell: bash
       run: dotnet test ${{ inputs.SolutionNameOverride }} -c ${{ steps.setvars.outputs.BuildConfiguration }} --nologo --no-restore --no-build -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=${{ github.workspace }}/coverage/
 
-    - name: code coverage - coveralls (1 of 2) - .NET 8.x SDK
+    - name: code coverage - coveralls
       if: github.event.inputs.CodeCoverage == 'true'
-      uses: coverallsapp/github-action@master
+      uses: coverallsapp/github-action@v2.3.0
       with:
-        github-token: ${{ inputs.GITHUB_TOKEN }}
-        path-to-lcov: ${{ github.workspace }}/coverage/coverage.net8.0.info
+        file: ${{ github.workspace }}/coverage/coverage.net8.0.info
         flag-name: run-net8.0
-        parallel: true
-
-    - name: code coverage - coveralls (2 of 2)
-      if: github.event.inputs.CodeCoverage == 'true'
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ inputs.GITHUB_TOKEN }}
-        parallel-finished: true
 
     # - name: code coverage - report generator
     #   uses: danielpalme/ReportGenerator-GitHub-Action@4.5.8
