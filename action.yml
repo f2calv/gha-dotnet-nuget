@@ -99,7 +99,7 @@ runs:
         flag-name: run-net8.0
 
     - name: code coverage - report generator
-      uses: danielpalme/ReportGenerator-GitHub-Action@5
+      uses: danielpalme/ReportGenerator-GitHub-Action@v5
       with:
         reports: ./coverage/coverage.*.info
         targetdir: ./coveragereport
