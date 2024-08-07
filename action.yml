@@ -89,32 +89,32 @@ runs:
 
     - name: dotnet test
       shell: bash
-      run: dotnet test ${{ inputs.SolutionNameOverride }} -c ${{ steps.setvars.outputs.BuildConfiguration }} --nologo --no-restore --no-build -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=${{ github.workspace }}/coverage/
+      run: dotnet test ${{ inputs.SolutionNameOverride }} -c ${{ steps.setvars.outputs.BuildConfiguration }} --nologo --no-restore --no-build -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=./coverage/
 
     - name: code coverage - coveralls
       if: github.event.inputs.CodeCoverage == 'true'
       uses: coverallsapp/github-action@v2.3.0
       with:
-        file: ${{ github.workspace }}/coverage/coverage.net8.0.info
-        flag-name: run-net8.0
+        file: ./coverage/coverage.info
 
     - name: code coverage - report generator
+      if: github.event.inputs.CodeCoverage == 'true'
       uses: danielpalme/ReportGenerator-GitHub-Action@v5
       with:
-        reports: ./coverage/coverage.*.info
+        reports: ./coverage/coverage.info
         targetdir: ./coveragereport
         reporttypes: lcov
         tag: ${{ github.run_number }}_${{ github.run_id }}
 
-    - name: reportgenerator
-      shell: bash
-      if: github.event.inputs.CodeCoverage == 'true'
-      run: |
-        dotnet tool update -g dotnet-reportgenerator-globaltool
-        reportgenerator -reports:./coverage/coverage.*.info \
-          -targetdir:./coveragereport \
-          -reporttypes:lcov \
-          -tag:${{ github.run_number }}_${{ github.run_id }}
+    # - name: reportgenerator
+    #   shell: bash
+    #   if: github.event.inputs.CodeCoverage == 'true'
+    #   run: |
+    #     dotnet tool update -g dotnet-reportgenerator-globaltool
+    #     reportgenerator -reports:./coverage/coverage.info \
+    #       -targetdir:./coveragereport \
+    #       -reporttypes:lcov \
+    #       -tag:${{ github.run_number }}_${{ github.run_id }}
 
     - name: code coverage - upload-artifact
       if: github.event.inputs.CodeCoverage == 'true'
