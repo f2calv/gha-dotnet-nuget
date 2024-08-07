@@ -5,29 +5,28 @@ description: Performs all the steps required to publish a versioned NuGet packag
 inputs:
   GITHUB_TOKEN:
     description: i.e. secrets.GITHUB_TOKEN
+    type: string
     required: true
   NUGET_API_KEY:
     description: i.e. secrets.NUGET_API_KEY
+    type: string
     required: false
   BuildConfiguration:
     description: i.e. Debug or Release
-    default: Release
-    required: false
     type: string
+    default: Release
   PublishPreview:
     description: Publish preview branch?
-    required: false
     type: boolean
+    default: false
   CodeCoverage:
     description: Default is 'true'
-    default: true
-    required: false
     type: boolean
+    default: true
   SolutionNameOverride:
     description: Override Visual Studio Solution file, e.g. with a specific .Release version.
-    default: ""
-    required: false
     type: string
+    default: ""
 
 outputs:
   semVer:
@@ -92,13 +91,13 @@ runs:
       run: dotnet test ${{ inputs.SolutionNameOverride }} -c ${{ steps.setvars.outputs.BuildConfiguration }} --nologo --no-restore --no-build -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=./coverage/
 
     - name: code coverage - coveralls
-      if: github.event.inputs.CodeCoverage == 'true'
+      if: inputs.CodeCoverage == 'true'
       uses: coverallsapp/github-action@v2.3.0
       with:
         file: ./coverage/coverage.info
 
     - name: code coverage - report generator
-      if: github.event.inputs.CodeCoverage == 'true'
+      if: inputs.CodeCoverage == 'true'
       uses: danielpalme/ReportGenerator-GitHub-Action@v5
       with:
         reports: ./coverage/coverage.info
@@ -108,7 +107,7 @@ runs:
 
     # - name: reportgenerator
     #   shell: bash
-    #   if: github.event.inputs.CodeCoverage == 'true'
+    #   if: inputs.CodeCoverage == 'true'
     #   run: |
     #     dotnet tool update -g dotnet-reportgenerator-globaltool
     #     reportgenerator -reports:./coverage/coverage.info \
@@ -117,7 +116,7 @@ runs:
     #       -tag:${{ github.run_number }}_${{ github.run_id }}
 
     - name: code coverage - upload-artifact
-      if: github.event.inputs.CodeCoverage == 'true'
+      if: inputs.CodeCoverage == 'true'
       uses: actions/upload-artifact@v4
       with:
         name: coveragereport
@@ -139,7 +138,7 @@ runs:
         fi
       if: |
         steps.check-release-exists.outputs.ReleaseExists == 'false'
-          && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || github.event.inputs.PublishPreview == 'true')
+          && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || inputs.PublishPreview == 'true')
 
     - name: dotnet push (nuget.pkg.github.com)
       shell: bash
@@ -148,14 +147,14 @@ runs:
         gpr push ${{ github.workspace }}/src/**/*.nupkg -k ${{ inputs.GITHUB_TOKEN }}
       if: |
         steps.check-release-exists.outputs.ReleaseExists == 'false'
-          && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || github.event.inputs.PublishPreview == 'true')
+          && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || inputs.PublishPreview == 'true')
 
     - name: create release ${{ steps.gitversion.outputs.fullSemVer }}
       uses: softprops/action-gh-release@v2
       #Note: always attempt to create a release if primary nuget push has succeeded (i.e. if gpr push has failed)
       if: |
         steps.check-release-exists.outputs.ReleaseExists == 'false'
-          && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || github.event.inputs.PublishPreview == 'true')
+          && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || inputs.PublishPreview == 'true')
       with:
         tag_name: ${{ steps.gitversion.outputs.fullSemVer }}
         name: ${{ steps.gitversion.outputs.fullSemVer }}
