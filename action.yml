@@ -88,7 +88,7 @@ runs:
 
     - name: dotnet test
       shell: bash
-      run: dotnet test ${{ inputs.SolutionNameOverride }} -c ${{ steps.setvars.outputs.BuildConfiguration }} --nologo --no-restore --no-build -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=./coverage/
+      run: dotnet test ${{ inputs.SolutionNameOverride }} -c ${{ steps.setvars.outputs.BuildConfiguration }} --nologo --no-restore --no-build -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=${{ github.workspace }}/coverage/
 
     - name: code coverage - coveralls
       if: inputs.CodeCoverage == 'true'
@@ -101,7 +101,7 @@ runs:
       uses: danielpalme/ReportGenerator-GitHub-Action@v5
       with:
         reports: ${{ github.workspace }}/coverage/coverage.info
-        targetdir: ./coveragereport
+        targetdir: ${{ github.workspace }}/coveragereport
         reporttypes: lcov
         tag: ${{ github.run_number }}_${{ github.run_id }}
 
@@ -111,7 +111,7 @@ runs:
     #   run: |
     #     dotnet tool update -g dotnet-reportgenerator-globaltool
     #     reportgenerator -reports:${{ github.workspace }}/coverage/coverage.info \
-    #       -targetdir:./coveragereport \
+    #       -targetdir:${{ github.workspace }}/coveragereport \
     #       -reporttypes:lcov \
     #       -tag:${{ github.run_number }}_${{ github.run_id }}
 
