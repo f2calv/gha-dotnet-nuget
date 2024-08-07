@@ -94,13 +94,13 @@ runs:
       if: inputs.CodeCoverage == 'true'
       uses: coverallsapp/github-action@v2.3.0
       with:
-        file: ./coverage/coverage.info
+        file: ${{ github.workspace }}/coverage/coverage.info
 
     - name: code coverage - report generator
       if: inputs.CodeCoverage == 'true'
       uses: danielpalme/ReportGenerator-GitHub-Action@v5
       with:
-        reports: ./coverage/coverage.info
+        reports: ${{ github.workspace }}/coverage/coverage.info
         targetdir: ./coveragereport
         reporttypes: lcov
         tag: ${{ github.run_number }}_${{ github.run_id }}
@@ -110,7 +110,7 @@ runs:
     #   if: inputs.CodeCoverage == 'true'
     #   run: |
     #     dotnet tool update -g dotnet-reportgenerator-globaltool
-    #     reportgenerator -reports:./coverage/coverage.info \
+    #     reportgenerator -reports:${{ github.workspace }}/coverage/coverage.info \
     #       -targetdir:./coveragereport \
     #       -reporttypes:lcov \
     #       -tag:${{ github.run_number }}_${{ github.run_id }}
