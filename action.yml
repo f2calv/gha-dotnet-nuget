@@ -37,9 +37,9 @@ inputs:
     default: 8.0.x
 
 outputs:
-  BuildConfiguration:
+  configuration:
     description: .NET Configuration e.g. Debug or Release
-    value: ${{ steps.setvars.outputs.BuildConfiguration }}
+    value: ${{ steps.setvars.outputs.configuration }}
 
 runs:
   using: composite
@@ -52,7 +52,8 @@ runs:
       shell: bash
       id: setvars
       run: |
-        echo "configuration=${${{ inputs.configuration }}:-"Release"}" >> $GITHUB_OUTPUT
+        configuration=${{ inputs.configuration }}
+        echo "configuration=${configuration:-"Release"}" >> $GITHUB_OUTPUT
 
     - uses: actions/setup-dotnet@v4
       with:
