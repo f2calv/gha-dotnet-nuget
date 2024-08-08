@@ -36,6 +36,11 @@ inputs:
     type: string
     default: 8.0.x
 
+outputs:
+  BuildConfiguration:
+    description: .NET Configuration e.g. Debug or Release
+    value: ${{ steps.setvars.outputs.BuildConfiguration }}
+
 runs:
   using: composite
   steps:
