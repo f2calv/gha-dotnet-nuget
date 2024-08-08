@@ -47,8 +47,7 @@ runs:
       shell: bash
       id: setvars
       run: |
-        dotnet-configuration=${{ inputs.dotnet-configuration }}
-        echo "dotnet-configuration=${dotnet-configuration:-"Release"}" >> $GITHUB_OUTPUT
+        echo "dotnet-configuration=${${{ inputs.dotnet-configuration }}:-"Release"}" >> $GITHUB_OUTPUT
 
     - uses: actions/setup-dotnet@v4
       with:
