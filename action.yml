@@ -47,7 +47,7 @@ runs:
       shell: bash
       id: setvars
       run: |
-        echo "dotnet-configuration=${${{ inputs.dotnet-configuration }}:-"Release"}" >> $GITHUB_OUTPUT
+        echo "configuration=${${{ inputs.configuration }}:-"Release"}" >> $GITHUB_OUTPUT
 
     - uses: actions/setup-dotnet@v4
       with:
@@ -58,15 +58,15 @@ runs:
       run: dotnet restore ${{ inputs.solution-name }} --verbosity minimal
       env:
         #https://github.com/NuGet/Home/issues/7575#issuecomment-443801131
-        NUGET_RESTORE_MSBUILD_ARGS: /p:Configuration=${{ steps.setvars.outputs.dotnet-configuration }}
+        NUGET_RESTORE_MSBUILD_ARGS: /p:Configuration=${{ steps.setvars.outputs.configuration }}
 
     - name: dotnet build
       shell: bash
-      run: dotnet build ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.dotnet-configuration }} --nologo --no-restore -p:Version='${{ inputs.version }}' -p:SourceRevisionId=${{ github.sha }}
+      run: dotnet build ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.configuration }} --nologo --no-restore -p:Version='${{ inputs.version }}' -p:SourceRevisionId=${{ github.sha }}
 
     - name: dotnet test
       shell: bash
-      run: dotnet test ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.dotnet-configuration }} --nologo --no-restore --no-build -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=${{ github.workspace }}/coverage/
+      run: dotnet test ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.configuration }} --nologo --no-restore --no-build -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=${{ github.workspace }}/coverage/
 
     - name: code coverage - coveralls
       if: inputs.code-coverage == 'true'
@@ -102,7 +102,7 @@ runs:
 
     - name: dotnet pack
       shell: bash
-      run: dotnet pack ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.dotnet-configuration }} --nologo --no-build --include-symbols -p:Version='${{ inputs.version }}'
+      run: dotnet pack ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.configuration }} --nologo --no-build --include-symbols -p:Version='${{ inputs.version }}'
       if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
 
     - name: dotnet push (api.nuget.org)
