@@ -59,16 +59,17 @@ runs:
       with:
         dotnet-version: ${{ inputs.dotnet-version }}
 
-    - name: dotnet restore
-      shell: bash
-      run: dotnet restore ${{ inputs.solution-name }} --verbosity minimal
-      env:
-        #https://github.com/NuGet/Home/issues/7575#issuecomment-443801131
-        NUGET_RESTORE_MSBUILD_ARGS: /p:Configuration=${{ steps.setvars.outputs.configuration }}
+    # - name: dotnet restore
+    #   shell: bash
+    #   run: dotnet restore ${{ inputs.solution-name }} --verbosity minimal
+    #   env:
+    #     #https://github.com/NuGet/Home/issues/7575#issuecomment-443801131
+    #     NUGET_RESTORE_MSBUILD_ARGS: /p:Configuration=${{ steps.setvars.outputs.configuration }}
 
     - name: dotnet build
       shell: bash
-      run: dotnet build ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.configuration }} --no-restore --nologo -p:Version='${{ inputs.version }}' -p:SourceRevisionId=${{ github.sha }}
+      #run: dotnet build ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.configuration }} --no-restore --nologo -p:Version='${{ inputs.version }}' -p:SourceRevisionId=${{ github.sha }}
+      run: dotnet build ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.configuration }} --nologo -p:Version='${{ inputs.version }}' -p:SourceRevisionId=${{ github.sha }}
 
     - name: dotnet test
       shell: bash
