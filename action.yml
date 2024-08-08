@@ -1,38 +1,38 @@
 name: .NET Build/Test/Pack/Publish
 author: Alex Vincent
-description: Performs all the steps required to publish a versioned NuGet package to the official NuGet or GitHub packages feeds.
+description: Performs all the steps required to publish a versioned NuGet package to the official NuGet and/or GitHub packages feeds.
 
 inputs:
   GITHUB_TOKEN:
-    description: e.g. secrets.GITHUB_TOKEN
+    description: GitHub token to push to GitHub packages e.g. secrets.GITHUB_TOKEN
     type: string
     required: true
   NUGET_API_KEY:
-    description: e.g. secrets.NUGET_API_KEY
+    description: NuGet API key to push to nuget.org feed e.g. secrets.NUGET_API_KEY
     type: string
     required: false
   version:
     type: string
-    description: e.g. 1.2.301-feature-my-feature.12
+    description: NuGet package version e.g. 1.2.301-feature-my-feature.12
     required: true
   configuration:
     type: string
-    description: e.g. Debug or Release
+    description: .NET Configuration e.g. Debug or Release
     default: Release
   solution-name:
     type: string
-    description: e.g. MySolution.sln or MyProject.csproj
+    description: Specify exactly which .NET solution or project to build when multiple exist. e.g. MySolution.sln or MyProject.csproj
     default: ''
   publish-preview:
-    description: Publish preview branch?
+    description: Publish NuGet package from a preview branch?
     type: boolean
     default: false
   code-coverage:
-    description: Default is 'true'
+    description: Execute code coverage tools. Default is 'true'
     type: boolean
     default: true
   dotnet-version:
-    description: .NET version
+    description: Build solution against specific .NET version. Default is '8.0.x'
     type: string
     default: 8.0.x
 
