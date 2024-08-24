@@ -34,13 +34,16 @@ steps:
     configuration: Release
 ```
 
-Here are fully working examples of this action in active use in my own public repositories;
+Some working examples of this action in active use in my own public repositories, the following projects use this action via a shared [re-usable workflow](https://github.com/f2calv/gha-workflows/blob/main/.github/workflows/dotnet-publish-nuget.yml);
 
-- [gha-dotnet-nuget-test](https://github.com/f2calv/gha-dotnet-nuget-test) - uses this action via a [re-usable workflow](https://github.com/f2calv/gha-workflows/blob/main/.github/workflows/dotnet-publish-nuget.yml) (this project can be used as a template of best practise if required)
+- [gha-dotnet-nuget-test](https://github.com/f2calv/gha-dotnet-nuget-test) - (this project can be used as a template of best practise if required)
+- [CasCap.Apis.GooglePhotos](https://github.com/f2calv/CasCap.Apis.GooglePhotos)
+- [CasCap.GooglePhotosCli](https://github.com/f2calv/CasCap.Apis.GooglePhotos)
+- [yamlizr](https://github.com/f2calv/yamlizr)
+
+These projects use this action directly due to a non-standard testing process;
+
 - [CasCap.Common](https://github.com/f2calv/gha-dotnet-nuget-test) - uses this action [directly](https://github.com/f2calv/CasCap.Common/blob/main/.github/workflows/ci.yml).
-- [CasCap.Apis.GooglePhotos](https://github.com/f2calv/CasCap.Apis.GooglePhotos) - uses this action via a [re-usable workflow](https://github.com/f2calv/gha-workflows/blob/main/.github/workflows/dotnet-publish-nuget.yml).
-- [CasCap.GooglePhotosCli](https://github.com/f2calv/CasCap.Apis.GooglePhotos) - uses this action via a [re-usable workflow](https://github.com/f2calv/gha-workflows/blob/main/.github/workflows/dotnet-publish-nuget.yml).
-- [yamlizr](https://github.com/f2calv/yamlizr) - uses this action via a [re-usable workflow](https://github.com/f2calv/gha-workflows/blob/main/.github/workflows/dotnet-publish-nuget.yml).
 
 ## Inputs
 
@@ -54,4 +57,4 @@ Here are fully working examples of this action in active use in my own public re
 ## Outputs
 
 - configuration, final build configuration that was used in the build, i.e. `Debug` or `Release`
-  Note: Why? When passing in BuildConfiguration via a `workflow_dispatch` there is the potential for the inbound parameter to be an empty string.
+  Note: Why? When passing in configuration via a `workflow_dispatch` there is the potential for the inbound parameter to be an empty string so we set a value and output it.
