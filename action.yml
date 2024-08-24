@@ -1,40 +1,45 @@
 name: .NET Build/Test/Pack/Publish
 author: Alex Vincent
-description: Performs all the steps required to publish a versioned NuGet package to the official NuGet or GitHub packages feeds.
+description: Performs all the steps required to publish a versioned NuGet package to the official NuGet and/or GitHub packages feeds.
 
 inputs:
   GITHUB_TOKEN:
-    description: i.e. secrets.GITHUB_TOKEN
+    description: GitHub token to push to GitHub packages e.g. secrets.GITHUB_TOKEN
+    type: string
     required: true
   NUGET_API_KEY:
-    description: i.e. secrets.NUGET_API_KEY
+    description: NuGet API key to push to nuget.org feed e.g. secrets.NUGET_API_KEY
+    type: string
     required: false
-  BuildConfiguration:
-    description: i.e. Debug or Release
+  version:
+    type: string
+    description: NuGet package version e.g. 1.2.301-feature-my-feature.12
+    required: true
+  configuration:
+    type: string
+    description: .NET Configuration e.g. Debug or Release
     default: Release
-    required: false
-  PublishPreview:
-    description: Publish preview branch?
-    required: false
-  CodeCoverage:
-    description: Default is 'true'
-    default: "true"
-    required: false
-  SolutionNameOverride:
-    description: Override Visual Studio Solution file, e.g. with a specific .Release version.
-    default: ""
-    required: false
+  solution-name:
+    type: string
+    description: Specify exactly which .NET solution or project to build when multiple exist. e.g. MySolution.sln or MyProject.csproj
+    default: ''
+  publish-preview:
+    description: Publish NuGet package from a preview branch?
+    type: boolean
+    default: false
+  code-coverage:
+    description: Execute code coverage tools. Default is 'true'
+    type: boolean
+    default: true
+  dotnet-version:
+    description: Build solution against specific .NET version. Default is '8.0.x'
+    type: string
+    default: 8.0.x
 
 outputs:
-  semVer:
-    description: i.e. 1.2.2
-    value: ${{ steps.gitversion.outputs.semVer }}
-  fullSemVer:
-    description: i.e. 1.2.2-2022-04-ci-updates.13
-    value: ${{ steps.gitversion.outputs.fullSemVer }}
-  BuildConfiguration:
-    description: i.e. Debug or Release
-    value: ${{ steps.setvars.outputs.BuildConfiguration }}
+  configuration:
+    description: .NET Configuration e.g. Debug or Release
+    value: ${{ steps.setvars.outputs.configuration }}
 
 runs:
   using: composite
@@ -47,83 +52,57 @@ runs:
       shell: bash
       id: setvars
       run: |
-        BuildConfiguration=${{ inputs.BuildConfiguration }}
-        echo "BuildConfiguration=${BuildConfiguration:-"Release"}" >> $GITHUB_OUTPUT
+        configuration=${{ inputs.configuration }}
+        echo "configuration=${configuration:-"Release"}" >> $GITHUB_OUTPUT
 
     - uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 8.0.x
-
-    - name: gitversion (1 of 2)
-      uses: gittools/actions/gitversion/setup@v1
-      with:
-        versionSpec: 5.x
-
-    - name: gitversion (2 of 2)
-      id: gitversion
-      uses: gittools/actions/gitversion/execute@v1
-      with:
-        useConfigFile: true
-        additionalArguments: /nofetch
-
-    - uses: f2calv/gha-check-release-exists@v2
-      id: check-release-exists
-      with:
-        GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
-        ReleaseName: ${{ steps.gitversion.outputs.semVer }}
+        dotnet-version: ${{ inputs.dotnet-version }}
 
     - name: dotnet restore
       shell: bash
-      run: dotnet restore ${{ inputs.SolutionNameOverride }} --verbosity minimal
+      run: dotnet restore ${{ inputs.solution-name }} --verbosity minimal
       env:
         #https://github.com/NuGet/Home/issues/7575#issuecomment-443801131
-        NUGET_RESTORE_MSBUILD_ARGS: /p:Configuration=${{ steps.setvars.outputs.BuildConfiguration }}
+        NUGET_RESTORE_MSBUILD_ARGS: /p:Configuration=${{ steps.setvars.outputs.configuration }}
 
     - name: dotnet build
       shell: bash
-      run: dotnet build ${{ inputs.SolutionNameOverride }} -c ${{ steps.setvars.outputs.BuildConfiguration }} --nologo --no-restore -p:Version='${{ steps.gitversion.outputs.semVer }}' -p:SourceRevisionId=${{ github.sha }}
+      run: dotnet build ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.configuration }} --no-restore --nologo -p:Version='${{ inputs.version }}' -p:SourceRevisionId=${{ github.sha }}
+      #run: dotnet build ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.configuration }} --nologo -p:Version='${{ inputs.version }}' -p:SourceRevisionId=${{ github.sha }}
 
     - name: dotnet test
       shell: bash
-      run: dotnet test ${{ inputs.SolutionNameOverride }} -c ${{ steps.setvars.outputs.BuildConfiguration }} --nologo --no-restore --no-build -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=${{ github.workspace }}/coverage/
+      run: dotnet test ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.configuration }} --no-restore --nologo --no-build -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=${{ github.workspace }}/coverage/
+      #run: dotnet test ${{ inputs.solution-name }} --nologo -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=${{ github.workspace }}/coverage/
 
-    - name: code coverage - coveralls (1 of 2) - .NET 8.x SDK
-      if: github.event.inputs.CodeCoverage == 'true'
-      uses: coverallsapp/github-action@master
+    - name: code coverage - coveralls
+      if: inputs.code-coverage == 'true'
+      uses: coverallsapp/github-action@v2.3.0
       with:
-        github-token: ${{ inputs.GITHUB_TOKEN }}
-        path-to-lcov: ${{ github.workspace }}/coverage/coverage.net8.0.info
-        flag-name: run-net8.0
-        parallel: true
+        file: ${{ github.workspace }}/coverage/coverage.info
 
-    - name: code coverage - coveralls (2 of 2)
-      if: github.event.inputs.CodeCoverage == 'true'
-      uses: coverallsapp/github-action@master
+    - name: code coverage - report generator
+      if: inputs.code-coverage == 'true'
+      uses: danielpalme/ReportGenerator-GitHub-Action@v5
       with:
-        github-token: ${{ inputs.GITHUB_TOKEN }}
-        parallel-finished: true
+        reports: ${{ github.workspace }}/coverage/coverage.info
+        targetdir: ${{ github.workspace }}/coveragereport
+        reporttypes: lcov
+        tag: ${{ github.run_number }}_${{ github.run_id }}
 
-    # - name: code coverage - report generator
-    #   uses: danielpalme/ReportGenerator-GitHub-Action@4.5.8
-    #   if: runner.OS == 'Linux'
-    #   with:
-    #     reports: ./coverage/coverage.*.info
-    #     targetdir: ./coveragereport
-    #     reporttypes: lcov
-    #     tag: ${{ github.run_number }}_${{ github.run_id }}
-
-    - name: reportgenerator
-      shell: bash
-      if: github.event.inputs.CodeCoverage == 'true'
-      run: |
-        dotnet tool update -g dotnet-reportgenerator-globaltool
-        reportgenerator -reports:./coverage/coverage.*.info \
-          -targetdir:./coveragereport \
-          -reporttypes:lcov \
-          -tag:${{ github.run_number }}_${{ github.run_id }}
+    # - name: reportgenerator
+    #   shell: bash
+    #   if: inputs.code-coverage == 'true'
+    #   run: |
+    #     dotnet tool update -g dotnet-reportgenerator-globaltool
+    #     reportgenerator -reports:${{ github.workspace }}/coverage/coverage.info \
+    #       -targetdir:${{ github.workspace }}/coveragereport \
+    #       -reporttypes:lcov \
+    #       -tag:${{ github.run_number }}_${{ github.run_id }}
 
     - name: code coverage - upload-artifact
-      if: github.event.inputs.CodeCoverage == 'true'
+      if: inputs.code-coverage == 'true'
       uses: actions/upload-artifact@v4
       with:
         name: coveragereport
@@ -131,7 +110,7 @@ runs:
 
     - name: dotnet pack
       shell: bash
-      run: dotnet pack ${{ inputs.SolutionNameOverride }} -c ${{ steps.setvars.outputs.BuildConfiguration }} --nologo --no-build --include-symbols -p:Version='${{ steps.gitversion.outputs.semVer }}'
+      run: dotnet pack ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.configuration }} --nologo --no-build --include-symbols -p:Version='${{ inputs.version }}'
       if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
 
     - name: dotnet push (api.nuget.org)
@@ -145,7 +124,7 @@ runs:
         fi
       if: |
         steps.check-release-exists.outputs.ReleaseExists == 'false'
-          && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || github.event.inputs.PublishPreview == 'true')
+          && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || inputs.publish-preview == 'true')
 
     - name: dotnet push (nuget.pkg.github.com)
       shell: bash
@@ -154,14 +133,4 @@ runs:
         gpr push ${{ github.workspace }}/src/**/*.nupkg -k ${{ inputs.GITHUB_TOKEN }}
       if: |
         steps.check-release-exists.outputs.ReleaseExists == 'false'
-          && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || github.event.inputs.PublishPreview == 'true')
-
-    - name: create release ${{ steps.gitversion.outputs.fullSemVer }}
-      uses: softprops/action-gh-release@v2
-      #Note: always attempt to create a release if primary nuget push has succeeded (i.e. if gpr push has failed)
-      if: |
-        steps.check-release-exists.outputs.ReleaseExists == 'false'
-          && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || github.event.inputs.PublishPreview == 'true')
-      with:
-        tag_name: ${{ steps.gitversion.outputs.fullSemVer }}
-        name: ${{ steps.gitversion.outputs.fullSemVer }}
+          && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || inputs.publish-preview == 'true')
