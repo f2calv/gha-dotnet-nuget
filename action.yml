@@ -1,20 +1,18 @@
-name: .NET Build/Test/Pack/Publish
+name: .NET Build/Test/Pack/Push
 author: Alex Vincent
-description: Performs all the steps required to publish a versioned NuGet package to the official NuGet and/or GitHub packages feeds.
+description: Performs steps required to push a versioned NuGet package to the official NuGet and/or GitHub packages feeds.
 
 inputs:
-  GITHUB_TOKEN:
-    description: GitHub token to push to GitHub packages e.g. secrets.GITHUB_TOKEN
-    type: string
-    required: true
-  NUGET_API_KEY:
-    description: NuGet API key to push to nuget.org feed e.g. secrets.NUGET_API_KEY
-    type: string
-    required: false
   version:
     type: string
     description: NuGet package version e.g. 1.2.301-feature-my-feature.12
     required: true
+  GITHUB_TOKEN:
+    description: GitHub token to push to GitHub packages e.g. secrets.GITHUB_TOKEN
+    type: string
+  NUGET_API_KEY:
+    description: NuGet API key to push to nuget.org feed e.g. secrets.NUGET_API_KEY
+    type: string
   configuration:
     type: string
     description: .NET Configuration e.g. Debug or Release
@@ -23,7 +21,11 @@ inputs:
     type: string
     description: Specify exactly which .NET solution or project to build when multiple exist. e.g. MySolution.sln or MyProject.csproj
     default: ''
-  publish-preview:
+  push:
+    type: boolean
+    description: Should we push packages?
+    default: true
+  push-preview:
     description: Publish NuGet package from a preview branch?
     type: boolean
     default: false
@@ -120,17 +122,22 @@ runs:
         then
           dotnet nuget push ${{ github.workspace }}/src/**/*.nupkg --skip-duplicate -k ${{ inputs.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json --skip-duplicate
         else
-          echo "::warning title=NUGET_API_KEY::NUGET_API_KEY is missing from secrets, skipping push to api.nuget.org."
+          echo "::warning title=NUGET_API_KEY::NUGET_API_KEY is missing from secrets, skipping push to api.nuget.org"
         fi
       if: |
-        steps.check-release-exists.outputs.ReleaseExists == 'false'
-          && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || inputs.publish-preview == 'true')
+        (inputs.push == 'true' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+          || inputs.push-preview == 'true'
 
     - name: dotnet push (nuget.pkg.github.com)
       shell: bash
       run: |
-        dotnet tool update -g gpr
-        gpr push ${{ github.workspace }}/src/**/*.nupkg -k ${{ inputs.GITHUB_TOKEN }}
+        if [[ "${{ inputs.GITHUB_TOKEN }}" != "" ]]; \
+        then
+          dotnet tool update -g gpr
+          gpr push ${{ github.workspace }}/src/**/*.nupkg -k ${{ inputs.GITHUB_TOKEN }}
+        else
+          echo "::warning title=GITHUB_TOKEN::GITHUB_TOKEN is missing from secrets, skipping push to nuget.pkg.github.com"
+        fi
       if: |
-        steps.check-release-exists.outputs.ReleaseExists == 'false'
-          && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || inputs.publish-preview == 'true')
+        (inputs.push == 'true' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+          || inputs.push-preview == 'true'
