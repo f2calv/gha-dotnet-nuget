@@ -1,19 +1,18 @@
-name: .NET Build/Test/Pack/Publish
+name: .NET Build/Test/Pack/Push
 author: Alex Vincent
-description: Performs all the steps required to publish a versioned NuGet package to the official NuGet and/or GitHub packages feeds.
+description: Performs steps required to push a versioned NuGet package to the official NuGet and/or GitHub packages feeds.
 
 inputs:
-  GITHUB_TOKEN:
-    description: GitHub token to push to GitHub packages e.g. secrets.GITHUB_TOKEN
-    type: string
-    required: true
-  NUGET_API_KEY:
-    description: NuGet API key to push to nuget.org feed e.g. secrets.NUGET_API_KEY
-    type: string
   version:
     type: string
     description: NuGet package version e.g. 1.2.301-feature-my-feature.12
     required: true
+  GITHUB_TOKEN:
+    description: GitHub token to push to GitHub packages e.g. secrets.GITHUB_TOKEN
+    type: string
+  NUGET_API_KEY:
+    description: NuGet API key to push to nuget.org feed e.g. secrets.NUGET_API_KEY
+    type: string
   configuration:
     type: string
     description: .NET Configuration e.g. Debug or Release
@@ -22,11 +21,11 @@ inputs:
     type: string
     description: Specify exactly which .NET solution or project to build when multiple exist. e.g. MySolution.sln or MyProject.csproj
     default: ''
-  publish:
+  push:
     type: boolean
     description: Should we push packages?
     default: true
-  publish-preview:
+  push-preview:
     description: Publish NuGet package from a preview branch?
     type: boolean
     default: false
@@ -126,8 +125,8 @@ runs:
           echo "::warning title=NUGET_API_KEY::NUGET_API_KEY is missing from secrets, skipping push to api.nuget.org"
         fi
       if: |
-        (inputs.publish == 'true' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
-          || inputs.publish-preview == 'true'
+        (inputs.push == 'true' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+          || inputs.push-preview == 'true'
 
     - name: dotnet push (nuget.pkg.github.com)
       shell: bash
@@ -140,5 +139,5 @@ runs:
           echo "::warning title=GITHUB_TOKEN::GITHUB_TOKEN is missing from secrets, skipping push to nuget.pkg.github.com"
         fi
       if: |
-        (inputs.publish == 'true' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
-          || inputs.publish-preview == 'true'
+        (inputs.push == 'true' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+          || inputs.push-preview == 'true'

@@ -10,27 +10,28 @@ Currently configured for these .NET versions;
 
 ## Examples
 
-Minimal usage example;
+
 
 ```yaml
 steps:
 
+#Minimal usage example will create packages but not push them.
 - uses: f2calv/gha-dotnet-nuget@v2
   with:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     version: 1.2.3
-```
 
-Complete usage example;
-
-```yaml
-steps:
-
+#Create packages and push to GitHub packages feed.
 - uses: f2calv/gha-dotnet-nuget@v2
   with:
+    version: 1.2.3
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+#Complete usage example creates packages and pushes to both NuGet and GitHub packages feed.
+- uses: f2calv/gha-dotnet-nuget@v2
+  with:
+    version: 1.2.3
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     NUGET_API_KEY: ${{ secrets.GITHUB_TOKEN }}
-    version: 1.2.3
     configuration: Release
 ```
 
@@ -47,12 +48,12 @@ These projects use this action directly due to a non-standard testing process;
 
 ## Inputs
 
-- GITHUB_TOKEN, built-in GitHub Actions token i.e. `${{ secrets.GITHUB_TOKEN }}`, required parameter.
-- NUGET_API_KEY, API key for your public NuGet account i.e. `${{ secrets.NUGET_API_KEY }}`, without this the NuGet package publish steps will be skipped.
-- version, NuGet package version e.g. 1.2.301-feature-my-feature.12
+- version, NuGet package version e.g. 1.2.301-feature-my-feature.12, required parameter.
+- GITHUB_TOKEN, built-in GitHub Actions token i.e. `${{ secrets.GITHUB_TOKEN }}`.
+- NUGET_API_KEY, API key for your public NuGet account i.e. `${{ secrets.NUGET_API_KEY }}`, without this the NuGet package push steps will be skipped.
 - configuration, .NET Configuration e.g. Debug or Release
 - solution-name, Specify exactly which .NET solution or project to build when multiple exist. e.g. MySolution.sln or MyProject.csproj
-- publish-preview, publish a pre-release package from a non-default branch - i.e. `true` or `false`, default is `false`
+- push-preview, push a pre-release package from a non-default branch - i.e. `true` or `false`, default is `false`
 
 ## Outputs
 
