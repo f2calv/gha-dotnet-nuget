@@ -3,6 +3,10 @@ author: Alex Vincent
 description: Performs steps required to push a versioned NuGet package to the official NuGet and/or GitHub packages feeds.
 
 inputs:
+  checkout:
+    type: boolean
+    description: Checkout the current repository?
+    default: true
   version:
     type: string
     description: NuGet package version e.g. 1.2.301-feature-my-feature.12
@@ -50,9 +54,10 @@ outputs:
 runs:
   using: composite
   steps:
-    # - uses: actions/checkout@v4
-    #   with:
-    #     fetch-depth: 0
+    if: inputs.checkout == 'true' 
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
     - name: set vars
       shell: bash
