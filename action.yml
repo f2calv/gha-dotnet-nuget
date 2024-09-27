@@ -3,6 +3,10 @@ author: Alex Vincent
 description: Performs steps required to push a versioned NuGet package to the official NuGet and/or GitHub packages feeds.
 
 inputs:
+  checkout:
+    type: boolean
+    description: Checkout the current repository?
+    default: true
   version:
     type: string
     description: NuGet package version e.g. 1.2.301-feature-my-feature.12
@@ -51,6 +55,7 @@ runs:
   using: composite
   steps:
     - uses: actions/checkout@v4
+      if: inputs.checkout == 'true' 
       with:
         fetch-depth: 0
 
@@ -80,7 +85,7 @@ runs:
     - name: dotnet test
       if: inputs.execute-tests == 'true'
       shell: bash
-      run: dotnet test ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.configuration }} --no-restore --nologo --no-build -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=${{ github.workspace }}/coverage/
+      run: dotnet test ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.configuration }} --no-restore --nologo --no-build -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=${{ github.workspace }}/coverage/ --logger:"console;verbosity=detailed"
       #run: dotnet test ${{ inputs.solution-name }} --nologo -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=${{ github.workspace }}/coverage/
 
     - name: code coverage - coveralls
