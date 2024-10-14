@@ -90,7 +90,7 @@ runs:
 
     - name: code coverage - coveralls
       if: inputs.execute-tests == 'true' && inputs.code-coverage == 'true'
-      uses: coverallsapp/github-action@v2.3.0
+      uses: coverallsapp/github-action@v2.3.1
       with:
         file: ${{ github.workspace }}/coverage/coverage.info
 
