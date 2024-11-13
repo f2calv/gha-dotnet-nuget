@@ -41,6 +41,26 @@ inputs:
     description: Execute code coverage tools. Default is 'true'
     type: boolean
     default: true
+  dotnet-restore-args:
+    type: string
+    description: Optional 'dotnet restore' arguments.
+    default: ''
+  dotnet-build-args:
+    type: string
+    description: Optional 'dotnet build' arguments.
+    default: ''
+  dotnet-test-args:
+    type: string
+    description: Optional 'dotnet test' arguments.
+    default: ''
+  dotnet-pack-args:
+    type: string
+    description: Optional 'dotnet pack' arguments.
+    default: ''
+  dotnet-push-args:
+    type: string
+    description: Optional 'dotnet push' arguments.
+    default: ''
 
 outputs:
   configuration:
@@ -70,20 +90,20 @@ runs:
 
     - name: dotnet restore
       shell: bash
-      run: dotnet restore ${{ inputs.solution-name }} --verbosity minimal
+      run: dotnet restore ${{ inputs.solution-name }} --verbosity minimal ${{ inputs.dotnet-restore-args }}
       env:
         #https://github.com/NuGet/Home/issues/7575#issuecomment-443801131
         NUGET_RESTORE_MSBUILD_ARGS: /p:Configuration=${{ steps.setvars.outputs.configuration }}
 
     - name: dotnet build
       shell: bash
-      run: dotnet build ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.configuration }} --no-restore --nologo -p:Version='${{ inputs.version }}' -p:SourceRevisionId=${{ github.sha }}
+      run: dotnet build ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.configuration }} --no-restore --nologo -p:Version='${{ inputs.version }}' -p:SourceRevisionId=${{ github.sha }} ${{ inputs.dotnet-build-args }}
       #run: dotnet build ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.configuration }} --nologo -p:Version='${{ inputs.version }}' -p:SourceRevisionId=${{ github.sha }}
 
     - name: dotnet test
       if: inputs.execute-tests == 'true'
       shell: bash
-      run: dotnet test ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.configuration }} --no-restore --nologo --no-build -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=${{ github.workspace }}/coverage/
+      run: dotnet test ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.configuration }} --no-restore --nologo --no-build -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=${{ github.workspace }}/coverage/ ${{ inputs.dotnet-test-args }}
       #run: dotnet test ${{ inputs.solution-name }} --nologo -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=${{ github.workspace }}/coverage/
 
     - name: code coverage - coveralls
@@ -121,7 +141,7 @@ runs:
 
     - name: dotnet pack
       shell: bash
-      run: dotnet pack ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.configuration }} --nologo --no-build --include-symbols -p:Version='${{ inputs.version }}'
+      run: dotnet pack ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.configuration }} --nologo --no-build --include-symbols -p:Version='${{ inputs.version }}' ${{ inputs.dotnet-pack-args }}
       if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
 
     - name: dotnet push (api.nuget.org)
@@ -129,7 +149,7 @@ runs:
       run: |
         if [[ "${{ inputs.NUGET_API_KEY }}" != "" ]]; \
         then
-          dotnet nuget push ${{ github.workspace }}/src/**/*.nupkg --skip-duplicate -k ${{ inputs.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json --skip-duplicate
+          dotnet nuget push ${{ github.workspace }}/src/**/*.nupkg --skip-duplicate -k ${{ inputs.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json --skip-duplicate ${{ inputs.dotnet-push-args }}
         else
           echo "::warning title=NUGET_API_KEY::NUGET_API_KEY is missing from secrets, skipping push to api.nuget.org"
         fi
