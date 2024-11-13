@@ -118,7 +118,7 @@ runs:
       uses: danielpalme/ReportGenerator-GitHub-Action@v5
       with:
         #reports: ${{ github.workspace }}/coverage/coverage.info
-        reports: ${{ github.workspace }}/coverage/coverage.net8.0.info ${{ github.workspace }}/coverage/coverage.net9.0.info
+        reports: ${{ github.workspace }}/coverage/coverage.net8.0.info;${{ github.workspace }}/coverage/coverage.net9.0.info
         targetdir: ${{ github.workspace }}/coveragereport
         reporttypes: lcov
         tag: ${{ github.run_number }}_${{ github.run_id }}
