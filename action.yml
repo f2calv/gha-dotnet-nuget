@@ -90,7 +90,8 @@ runs:
       if: inputs.execute-tests == 'true' && inputs.code-coverage == 'true'
       uses: coverallsapp/github-action@v2.3.0
       with:
-        file: ${{ github.workspace }}/coverage/coverage.info
+        #file: ${{ github.workspace }}/coverage/coverage.info
+        files: ${{ github.workspace }}/coverage/coverage.net8.0.info ${{ github.workspace }}/coverage/coverage.net9.0.info
 
     - name: code coverage - report generator
       if: inputs.execute-tests == 'true' && inputs.code-coverage == 'true'
