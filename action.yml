@@ -41,10 +41,6 @@ inputs:
     description: Execute code coverage tools. Default is 'true'
     type: boolean
     default: true
-  dotnet-version:
-    description: Build solution against specific .NET version. Default is '8.0.x'
-    type: string
-    default: 8.0.x
 
 outputs:
   configuration:
@@ -68,7 +64,9 @@ runs:
 
     - uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: ${{ inputs.dotnet-version }}
+        dotnet-version: |
+          8.0.x
+          9.0.x
 
     - name: dotnet restore
       shell: bash
