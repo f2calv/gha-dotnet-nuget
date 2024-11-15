@@ -111,7 +111,7 @@ runs:
       uses: coverallsapp/github-action@v2.3.0
       with:
         #file: ${{ github.workspace }}/coverage/coverage.info
-        files: ${{ github.workspace }}/coverage/coverage.net8.0.info ${{ github.workspace }}/coverage/coverage.net9.0.info
+        base-path: ${{ github.workspace }}/coverage
 
     - name: code coverage - report generator
       if: inputs.execute-tests == 'true' && inputs.code-coverage == 'true'
