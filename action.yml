@@ -108,10 +108,16 @@ runs:
 
     - name: code coverage - coveralls
       if: inputs.execute-tests == 'true' && inputs.code-coverage == 'true'
-      uses: coverallsapp/github-action@v2.3.0
+      uses: coverallsapp/github-action@v2
       with:
         #file: ${{ github.workspace }}/coverage/coverage.info
         base-path: ${{ github.workspace }}/coverage
+    
+    - name: debug
+      shell: bash
+      run: |
+        cd ${{ github.workspace }}/coverage
+        ls -lsa
 
     - name: code coverage - report generator
       if: inputs.execute-tests == 'true' && inputs.code-coverage == 'true'
