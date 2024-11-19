@@ -106,6 +106,12 @@ runs:
       run: dotnet test ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.configuration }} --no-restore --nologo --no-build -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=${{ github.workspace }}/coverage/ ${{ inputs.dotnet-test-args }}
       #run: dotnet test ${{ inputs.solution-name }} --nologo -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=${{ github.workspace }}/coverage/
 
+    - name: debug1
+      shell: bash
+      run: |
+        cd ${{ github.workspace }}/coverage
+        ls -lsa
+
     - name: code coverage - coveralls
       if: inputs.execute-tests == 'true' && inputs.code-coverage == 'true'
       uses: coverallsapp/github-action@v2
@@ -113,7 +119,7 @@ runs:
         #file: ${{ github.workspace }}/coverage/coverage.info
         #base-path: ${{ github.workspace }}/coverage
     
-    - name: debug
+    - name: debug2
       shell: bash
       run: |
         cd ${{ github.workspace }}/coverage
