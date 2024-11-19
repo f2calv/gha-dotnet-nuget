@@ -124,7 +124,7 @@ runs:
       if: inputs.execute-tests == 'true' && inputs.code-coverage == 'true'
       uses: danielpalme/ReportGenerator-GitHub-Action@v5
       with:
-        reports: ${{ github.workspace }}/coverage**.info
+        reports: ${{ github.workspace }}/coverage/**.info
         targetdir: ${{ github.workspace }}/coveragereport
         reporttypes: lcov
         tag: ${{ github.run_number }}_${{ github.run_id }}
