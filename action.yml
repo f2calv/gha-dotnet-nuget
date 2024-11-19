@@ -111,7 +111,7 @@ runs:
       uses: coverallsapp/github-action@v2
       with:
         #file: ${{ github.workspace }}/coverage/coverage.info
-        base-path: ${{ github.workspace }}/coverage
+        #base-path: ${{ github.workspace }}/coverage
     
     - name: debug
       shell: bash
