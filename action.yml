@@ -106,24 +106,19 @@ runs:
       run: dotnet test ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.configuration }} --no-restore --nologo --no-build -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=${{ github.workspace }}/coverage/ ${{ inputs.dotnet-test-args }}
       #run: dotnet test ${{ inputs.solution-name }} --nologo -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=${{ github.workspace }}/coverage/
 
-    - name: debug1
+    - name: code coverage - coveralls (1 of 2)
       shell: bash
+      id: coveralls
       run: |
-        cd ${{ github.workspace }}/coverage
-        ls -lsa
+        #files=$(find /mnt/c/Users/Alex/source/github/CasCap.Common/coverage -type f -printf '%p ')
+        files=$(find ${{ github.workspace }}/coverage -type f -printf '%p ')
+        echo "files=$files" >> $GITHUB_OUTPUT
 
-    - name: code coverage - coveralls
+    - name: code coverage - coveralls (2 of 2)
       if: inputs.execute-tests == 'true' && inputs.code-coverage == 'true'
       uses: coverallsapp/github-action@v2
-      # with:
-        #file: ${{ github.workspace }}/coverage/coverage.info
-        #base-path: ${{ github.workspace }}/coverage
-    
-    - name: debug2
-      shell: bash
-      run: |
-        cd ${{ github.workspace }}/coverage
-        ls -lsa
+      with:
+        files: ${{ steps.coveralls.outputs.files }}
 
     - name: code coverage - report generator
       if: inputs.execute-tests == 'true' && inputs.code-coverage == 'true'
