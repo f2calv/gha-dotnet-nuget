@@ -109,7 +109,7 @@ runs:
     - name: code coverage - coveralls
       if: inputs.execute-tests == 'true' && inputs.code-coverage == 'true'
       uses: coverallsapp/github-action@v2
-      with:
+      # with:
         #file: ${{ github.workspace }}/coverage/coverage.info
         #base-path: ${{ github.workspace }}/coverage
     
