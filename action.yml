@@ -108,6 +108,7 @@ runs:
 
     - name: code coverage - coveralls (1 of 2)
       shell: bash
+      if: inputs.execute-tests == 'true'
       id: coveralls
       run: |
         #files=$(find /mnt/c/Users/Alex/source/github/CasCap.Common/coverage -type f -printf '%p ')
