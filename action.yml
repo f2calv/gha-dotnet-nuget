@@ -82,7 +82,7 @@ runs:
         configuration=${{ inputs.configuration }}
         echo "configuration=${configuration:-"Release"}" >> $GITHUB_OUTPUT
 
-    - uses: actions/setup-dotnet@v4
+    - uses: actions/setup-dotnet@v5
       with:
         dotnet-version: |
           8.0.x
