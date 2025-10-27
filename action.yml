@@ -142,7 +142,7 @@ runs:
 
     - name: code coverage - upload-artifact
       if: inputs.execute-tests == 'true' && inputs.code-coverage == 'true'
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: coveragereport
         path: coveragereport
