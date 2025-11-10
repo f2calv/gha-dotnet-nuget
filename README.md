@@ -8,6 +8,7 @@ Currently configured for these .NET versions;
 
 - .NET 8.0.x
 - .NET 9.0.x
+- .NET 10.0.x
 
 ## Examples
 
