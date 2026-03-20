@@ -70,7 +70,7 @@ outputs:
 runs:
   using: composite
   steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       if: inputs.checkout == 'true'
       with:
         fetch-depth: 0
@@ -82,7 +82,7 @@ runs:
         configuration="${{ inputs.configuration }}"
         echo "configuration=${configuration:-"Release"}" >> $GITHUB_OUTPUT
 
-    - uses: actions/setup-dotnet@v4
+    - uses: actions/setup-dotnet@v5
       with:
         dotnet-version: |
           8.0.x
@@ -130,7 +130,7 @@ runs:
 
     - name: code coverage - upload-artifact
       if: inputs.execute-tests == 'true' && inputs.code-coverage == 'true'
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: coveragereport
         path: coveragereport
@@ -160,6 +160,7 @@ runs:
       run: |
         if [[ -n "${{ inputs.GITHUB_TOKEN }}" ]]; \
         then
+          #Note: GitHub Packages is not a full NuGet feed so for advanced NuGet functions the gpr tool (https://github.com/jcansdale/gpr) may be needed instead.
           dotnet nuget push ${{ github.workspace }}/src/**/*.nupkg --skip-duplicate -k ${{ inputs.GITHUB_TOKEN }} -s https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json ${{ inputs.dotnet-push-args }}
         else
           echo "::warning title=GITHUB_TOKEN::GITHUB_TOKEN is missing from secrets, skipping push to nuget.pkg.github.com"
