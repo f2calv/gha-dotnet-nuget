@@ -70,8 +70,8 @@ outputs:
 runs:
   using: composite
   steps:
-    - uses: actions/checkout@v6
-      if: inputs.checkout == 'true' 
+    - uses: actions/checkout@v4
+      if: inputs.checkout == 'true'
       with:
         fetch-depth: 0
 
@@ -79,10 +79,10 @@ runs:
       shell: bash
       id: setvars
       run: |
-        configuration=${{ inputs.configuration }}
+        configuration="${{ inputs.configuration }}"
         echo "configuration=${configuration:-"Release"}" >> $GITHUB_OUTPUT
 
-    - uses: actions/setup-dotnet@v5
+    - uses: actions/setup-dotnet@v4
       with:
         dotnet-version: |
           8.0.x
@@ -99,20 +99,17 @@ runs:
     - name: dotnet build
       shell: bash
       run: dotnet build ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.configuration }} --no-restore --nologo -p:Version='${{ inputs.version }}' -p:SourceRevisionId=${{ github.sha }} ${{ inputs.dotnet-build-args }}
-      #run: dotnet build ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.configuration }} --nologo -p:Version='${{ inputs.version }}' -p:SourceRevisionId=${{ github.sha }}
 
     - name: dotnet test
       if: inputs.execute-tests == 'true'
       shell: bash
       run: dotnet test ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.configuration }} --no-restore --nologo --no-build -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=${{ github.workspace }}/coverage/ ${{ inputs.dotnet-test-args }}
-      #run: dotnet test ${{ inputs.solution-name }} --nologo -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=${{ github.workspace }}/coverage/
 
     - name: code coverage - coveralls (1 of 2)
       shell: bash
       if: inputs.execute-tests == 'true'
       id: coveralls
       run: |
-        #files=$(find /mnt/c/Users/Alex/source/github/CasCap.Common/coverage -type f -printf '%p ')
         files=$(find ${{ github.workspace }}/coverage -type f -printf '%p ')
         echo "files=$files" >> $GITHUB_OUTPUT
 
@@ -131,19 +128,9 @@ runs:
         reporttypes: lcov
         tag: ${{ github.run_number }}_${{ github.run_id }}
 
-    # - name: reportgenerator
-    #   shell: bash
-    #   if: inputs.execute-tests == 'true' && inputs.code-coverage == 'true'
-    #   run: |
-    #     dotnet tool update -g dotnet-reportgenerator-globaltool
-    #     reportgenerator -reports:${{ github.workspace }}/coverage/coverage.info \
-    #       -targetdir:${{ github.workspace }}/coveragereport \
-    #       -reporttypes:lcov \
-    #       -tag:${{ github.run_number }}_${{ github.run_id }}
-
     - name: code coverage - upload-artifact
       if: inputs.execute-tests == 'true' && inputs.code-coverage == 'true'
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       with:
         name: coveragereport
         path: coveragereport
@@ -151,14 +138,16 @@ runs:
     - name: dotnet pack
       shell: bash
       run: dotnet pack ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.configuration }} --nologo --no-build --include-symbols -p:Version='${{ inputs.version }}' ${{ inputs.dotnet-pack-args }}
-      if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+      if: |
+        github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+          || inputs.push-preview == 'true'
 
     - name: dotnet push (api.nuget.org)
       shell: bash
       run: |
-        if [[ "${{ inputs.NUGET_API_KEY }}" != "" ]]; \
+        if [[ -n "${{ inputs.NUGET_API_KEY }}" ]]; \
         then
-          dotnet nuget push ${{ github.workspace }}/src/**/*.nupkg --skip-duplicate -k ${{ inputs.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json --skip-duplicate ${{ inputs.dotnet-push-args }}
+          dotnet nuget push ${{ github.workspace }}/src/**/*.nupkg --skip-duplicate -k ${{ inputs.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json ${{ inputs.dotnet-push-args }}
         else
           echo "::warning title=NUGET_API_KEY::NUGET_API_KEY is missing from secrets, skipping push to api.nuget.org"
         fi
@@ -169,10 +158,9 @@ runs:
     - name: dotnet push (nuget.pkg.github.com)
       shell: bash
       run: |
-        if [[ "${{ inputs.GITHUB_TOKEN }}" != "" ]]; \
+        if [[ -n "${{ inputs.GITHUB_TOKEN }}" ]]; \
         then
-          dotnet tool update -g gpr
-          gpr push ${{ github.workspace }}/src/**/*.nupkg -k ${{ inputs.GITHUB_TOKEN }}
+          dotnet nuget push ${{ github.workspace }}/src/**/*.nupkg --skip-duplicate -k ${{ inputs.GITHUB_TOKEN }} -s https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json ${{ inputs.dotnet-push-args }}
         else
           echo "::warning title=GITHUB_TOKEN::GITHUB_TOKEN is missing from secrets, skipping push to nuget.pkg.github.com"
         fi
