@@ -60,6 +60,7 @@
 
 - Every project's `README.md` must stay in sync with its implementation. During any refactoring — and **always** before creating a new PR — scan the `README.md` for inconsistencies: outdated input/output names, missing or removed configuration options, or inaccurate examples. Update the README as part of the same change, not as a follow-up.
 - **Mermaid diagrams**: Use Mermaid diagrams in `README.md` files to illustrate GitHub Actions workflow chains. These diagrams make complex relationships immediately visible and must be kept in sync with the code they describe.
+- **Markdown tables**: Table separator rows must use spaces around pipes to match the spaced style used in header and data rows (e.g. `| --- | --- |` not `|---|---|`). This prevents MD060 (table-column-style) warnings.
 
 ## Copilot Workflow
 

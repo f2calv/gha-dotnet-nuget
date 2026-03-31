@@ -49,7 +49,7 @@ These projects use this action directly due to a non-standard testing process:
 ## Inputs
 
 | Input | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
+| ----- | ---- | -------- | ------- | ----------- |
 | `version` | string | ✅ | | NuGet package version e.g. `1.2.301-feature-my-feature.12` |
 | `GITHUB_TOKEN` | string | | | GitHub token to push to GitHub Packages e.g. `${{ secrets.GITHUB_TOKEN }}` |
 | `NUGET_API_KEY` | string | | | NuGet API key for nuget.org e.g. `${{ secrets.NUGET_API_KEY }}`. Without this the nuget.org push step is skipped. |
@@ -69,5 +69,5 @@ These projects use this action directly due to a non-standard testing process:
 ## Outputs
 
 | Output | Description |
-|--------|-------------|
+| ------ | ----------- |
 | `configuration` | Final build configuration used e.g. `Debug` or `Release`. Note: when `configuration` is passed via `workflow_dispatch` the value may be an empty string, so this output always provides a valid non-empty value. |
