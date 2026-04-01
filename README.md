@@ -33,6 +33,14 @@ steps:
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
     configuration: Release
+
+# Push a pre-release package from a non-default branch, filtered to a specific package.
+- uses: f2calv/gha-dotnet-nuget@v2
+  with:
+    version: 1.2.3-my-feature.4
+    NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+    push-preview: true
+    package-filter: CasCap.Common.Caching
 ```
 
 Some working examples of this action in active use in my own public repositories, the following projects use this action via a shared [re-usable workflow](https://github.com/f2calv/gha-workflows/blob/main/.github/workflows/dotnet-publish-nuget.yml):
@@ -57,7 +65,7 @@ These projects use this action directly due to a non-standard testing process:
 | `configuration` | string | | `Release` | .NET build configuration e.g. `Debug` or `Release` |
 | `solution-name` | string | | | Specify exactly which .NET solution or project to build when multiple exist e.g. `MySolution.sln` or `MyProject.csproj` |
 | `push` | boolean | | `true` | Push packages to NuGet feeds |
-| `push-preview` | boolean | | `false` | Push a pre-release package from a non-default branch |
+| `push-preview` | boolean | | `false` | Push a pre-release NuGet package from a non-default branch. The version's SemVer pre-release suffix signals preview status to NuGet. |
 | `execute-tests` | boolean | | `true` | Execute unit tests |
 | `code-coverage` | boolean | | `true` | Execute code coverage tools |
 | `dotnet-restore-args` | string | | | Optional extra arguments for `dotnet restore` |
@@ -65,6 +73,24 @@ These projects use this action directly due to a non-standard testing process:
 | `dotnet-test-args` | string | | | Optional extra arguments for `dotnet test` |
 | `dotnet-pack-args` | string | | | Optional extra arguments for `dotnet pack` |
 | `dotnet-push-args` | string | | | Optional extra arguments for `dotnet nuget push` |
+| `package-filter` | string | | | Comma-separated list of package ID prefixes to push e.g. `CasCap.Common.Caching,CasCap.Common.Extensions`. When empty all packages are pushed. |
+
+## Push behaviour
+
+| Scenario | nuget.org | GitHub Packages |
+| --- | --- | --- |
+| Default branch, `push: true` | ✅ | ✅ |
+| Default branch, `push: false` | ❌ | ❌ |
+| Non-default branch, `push-preview: true` | ✅ | ❌ |
+| Non-default branch, `push-preview: false` | ❌ | ❌ |
+
+Preview packages are only pushed to nuget.org — GitHub Packages is reserved for stable releases from the default branch. NuGet automatically recognises a package as pre-release when the version contains a SemVer pre-release suffix (e.g. `1.2.3-my-feature.4`).
+
+### Package filtering
+
+When `package-filter` is set, only `.nupkg` files whose filename starts with one of the specified prefixes are pushed. This is useful during preview pushes to avoid cluttering nuget.org with packages that haven't actually changed.
+
+For example, if a solution produces `CasCap.Common.Caching`, `CasCap.Common.Extensions`, and `CasCap.Common.Serialization` packages, setting `package-filter: CasCap.Common.Caching` will push only the caching package.
 
 ## Outputs
 
