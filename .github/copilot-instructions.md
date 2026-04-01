@@ -52,7 +52,7 @@
 
 - Always set `fetch-depth: 0` on checkout when GitVersion is in use.
 - Default config file is `GitVersion.yml` in the repository root.
-- Prefer `semVer` for tags and releases; use `fullSemVer` for display and pre-release identifiers.
+- Prefer `semVer` for tags and releases; use `fullSemVer` (via the `version` output) for build versioning and pre-release identifiers.
 
 ## Documentation
 
