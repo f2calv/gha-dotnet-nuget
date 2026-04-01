@@ -30,7 +30,7 @@ inputs:
     description: Should we push packages?
     default: true
   push-preview:
-    description: Publish NuGet package from a preview branch?
+    description: Push a pre-release NuGet package from a non-default branch? The version's SemVer pre-release suffix (e.g. 1.2.3-my-feature.4) signals preview status to NuGet.
     type: boolean
     default: false
   execute-tests:
@@ -60,6 +60,10 @@ inputs:
   dotnet-push-args:
     type: string
     description: Optional 'dotnet push' arguments.
+    default: ''
+  package-filter:
+    type: string
+    description: Comma-separated list of package ID prefixes to push e.g. 'CasCap.Common.Caching,CasCap.Common.Extensions'. When empty all packages are pushed.
     default: ''
 
 outputs:
@@ -142,29 +146,70 @@ runs:
         github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
           || inputs.push-preview == 'true'
 
+    - name: resolve .nupkg files to push
+      shell: bash
+      id: packages
+      if: |
+        github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+          || inputs.push-preview == 'true'
+      run: |
+        shopt -s globstar nullglob
+        all_packages=(${{ github.workspace }}/src/**/*.nupkg)
+        if [[ -n "${{ inputs.package-filter }}" ]]; then
+          IFS=',' read -ra FILTERS <<< "${{ inputs.package-filter }}"
+          matched=()
+          for pkg in "${all_packages[@]}"; do
+            name=$(basename "$pkg")
+            for filter in "${FILTERS[@]}"; do
+              filter=$(echo "$filter" | xargs)
+              if [[ "$name" == ${filter}.* ]]; then
+                matched+=("$pkg")
+                break
+              fi
+            done
+          done
+          packages=("${matched[@]}")
+        else
+          packages=("${all_packages[@]}")
+        fi
+        if [[ ${#packages[@]} -eq 0 ]]; then
+          echo "::warning::No .nupkg files matched the package filter '${{ inputs.package-filter }}'"
+        else
+          echo "Packages to push:"
+          printf '  %s\n' "${packages[@]}"
+        fi
+        printf '%s\n' "${packages[@]}" > "${{ runner.temp }}/nupkg-list.txt"
+        echo "count=${#packages[@]}" >> $GITHUB_OUTPUT
+
     - name: dotnet push (api.nuget.org)
       shell: bash
       run: |
-        if [[ -n "${{ inputs.NUGET_API_KEY }}" ]]; \
-        then
-          dotnet nuget push ${{ github.workspace }}/src/**/*.nupkg --skip-duplicate -k ${{ inputs.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json ${{ inputs.dotnet-push-args }}
+        if [[ -n "${{ inputs.NUGET_API_KEY }}" ]]; then
+          while IFS= read -r pkg; do
+            [[ -z "$pkg" ]] && continue
+            dotnet nuget push "$pkg" --skip-duplicate -k ${{ inputs.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json ${{ inputs.dotnet-push-args }}
+          done < "${{ runner.temp }}/nupkg-list.txt"
         else
           echo "::warning title=NUGET_API_KEY::NUGET_API_KEY is missing from secrets, skipping push to api.nuget.org"
         fi
       if: |
-        (inputs.push == 'true' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
-          || inputs.push-preview == 'true'
+        steps.packages.outputs.count > 0
+          && ((inputs.push == 'true' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+            || inputs.push-preview == 'true')
 
     - name: dotnet push (nuget.pkg.github.com)
       shell: bash
       run: |
-        if [[ -n "${{ inputs.GITHUB_TOKEN }}" ]]; \
-        then
+        if [[ -n "${{ inputs.GITHUB_TOKEN }}" ]]; then
           #Note: GitHub Packages is not a full NuGet feed so for advanced NuGet functions the gpr tool (https://github.com/jcansdale/gpr) may be needed instead.
-          dotnet nuget push ${{ github.workspace }}/src/**/*.nupkg --skip-duplicate -k ${{ inputs.GITHUB_TOKEN }} -s https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json ${{ inputs.dotnet-push-args }}
+          while IFS= read -r pkg; do
+            [[ -z "$pkg" ]] && continue
+            dotnet nuget push "$pkg" --skip-duplicate -k ${{ inputs.GITHUB_TOKEN }} -s https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json ${{ inputs.dotnet-push-args }}
+          done < "${{ runner.temp }}/nupkg-list.txt"
         else
           echo "::warning title=GITHUB_TOKEN::GITHUB_TOKEN is missing from secrets, skipping push to nuget.pkg.github.com"
         fi
       if: |
-        (inputs.push == 'true' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
-          || inputs.push-preview == 'true'
+        steps.packages.outputs.count > 0
+          && inputs.push == 'true'
+          && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
