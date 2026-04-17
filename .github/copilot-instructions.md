@@ -1,5 +1,10 @@
 # Copilot Instructions
 
+<!-- ── Synced section ─────────────────────────────────────────────────────
+     Everything above the "Project-Specific Overrides" heading is kept
+     identical across all f2calv repositories. Edit once, sync everywhere.
+     ──────────────────────────────────────────────────────────────────── -->
+
 ## GitHub Actions
 
 ### General
@@ -59,13 +64,59 @@
 ### README Consistency
 
 - Every project's `README.md` must stay in sync with its implementation. During any refactoring — and **always** before creating a new PR — scan the `README.md` for inconsistencies: outdated input/output names, missing or removed configuration options, or inaccurate examples. Update the README as part of the same change, not as a follow-up.
-- **Mermaid diagrams**: Use Mermaid diagrams in `README.md` files to illustrate GitHub Actions workflow chains. These diagrams make complex relationships immediately visible and must be kept in sync with the code they describe.
 - **Markdown tables**: Table separator rows must use spaces around pipes to match the spaced style used in header and data rows (e.g. `| --- | --- |` not `|---|---|`). This prevents MD060 (table-column-style) warnings.
+
+### Mermaid Diagrams
+
+Use Mermaid diagrams in `README.md` files to visualize complex relationships and flows. Choose the appropriate diagram type:
+
+#### Diagram Type Selection
+
+- **`flowchart`**: Sequential processes, data flow, event flow, service orchestration, CI/CD pipelines
+  - Direction: Use `TD` (top-down) for vertical flows; `LR` (left-right) for wide workflows
+  - Example: GitHub Actions workflow chains, composite action steps
+
+- **`graph`**: Relationships, dependencies, hierarchies (non-sequential)
+  - Direction: Use `TD` for dependency trees; `LR` for peer relationships
+  - Example: Action dependencies, workflow call chains
+
+#### Standard Headings
+
+Use these consistent heading patterns before Mermaid diagrams:
+
+| Heading | Use For |
+| --- | --- |
+| `## Deployment Flow` | CI/CD pipelines, GitHub Actions workflows, action call chains |
+| `## Dependency Graph` | Action dependencies, workflow relationships |
+
+#### Styling Guidelines
+
+- **Subgraphs**: Group related steps or jobs
+- **Custom styling**: Define `classDef` for highlighting owned vs. third-party actions
+- **Node shapes**:
+  - `[ ]` rectangle (default) - actions, jobs
+  - `([ ])` stadium - workflows
+  - `{ }` diamond - decision points
+
+#### Synchronization
+
+- Mermaid diagrams must stay in sync with action/workflow changes
+- When renaming inputs/outputs, update corresponding diagram nodes
+- When adding/removing action dependencies, update dependency graphs
+- Review all `README.md` diagrams before creating PRs
 
 ## Copilot Workflow
 
+- **Test execution**: Never run tests automatically — they may be integration tests requiring extra setup. Always prompt (ideally with a visual yes/no button) before running any tests.
 - **Preserve git history during renames/moves**: When renaming or relocating files, first perform the rename/move (preferably via `git mv`), then make content edits to the file in its new location/name. This two-step approach preserves git history across the rename. Do not delete-and-recreate files when a rename or move is the intent.
 
 ## Misc
 
 - When detecting new conventions or patterns in the codebase, add them to this document and apply them retroactively where applicable.
+- When multiple `copilot-instructions.md` files are available in the workspace, keep them in sync based on the common guidelines in the synced section.
+
+---
+
+## Project-Specific Overrides
+
+<!-- This section is excluded from cross-repository sync. Place any repo-specific rules below. -->
