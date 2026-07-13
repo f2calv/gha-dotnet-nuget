@@ -1,71 +1,55 @@
 # Copilot Instructions
 
-## GitHub Actions
+<!-- ── Synced section ─────────────────────────────────────────────────────
+     This file plus every file under `.github/instructions/` is kept
+     identical across all f2calv GitHub Action repositories. The repo-specific
+     "Project-Specific Overrides" section below is excluded from sync.
+     Edit once, sync everywhere.
+     ──────────────────────────────────────────────────────────────────── -->
 
-### General
+## Instruction Files
 
-- Always leave **one blank line between steps** within a job for readability.
-- Pin actions to the **major version tag version by default** (e.g. `actions/checkout@v6`, `softprops/action-gh-release@v2`). Do not use SHA pinning or include minor/patch versions.
-- Set `fetch-depth: 0` on `actions/checkout` whenever GitVersion is used so it can read the full commit history. For lint-only workflows where history is unnecessary, `fetch-depth: 1` is acceptable.
-- Use explicit `permissions` blocks on every job; default to the minimum required (e.g. `contents: read`). Set global workflow-level permissions to `permissions: {}` (deny all) and grant per-job.
+Detailed conventions live in scoped instruction files under `.github/instructions/`, auto-applied by file type:
 
-### Step Naming
+| File | Applies to | Covers |
+| --- | --- | --- |
+| `github-actions.instructions.md` | workflows / `action.yml` | GitHub Actions naming, YAML, security, GitVersion |
+| `documentation.instructions.md` | `**/*.md` | README consistency & Mermaid diagrams |
 
-- **One-liners**: When a step's `run` block is a single command, use that command (or a slightly abbreviated form) as the step `name` rather than a descriptive prose label (e.g. `name: npm install --global json5`, not `name: setup json5`).
-- **Multi-part setup**: When a setup requires multiple steps, name each step with a `(N of M)` suffix (e.g. `name: setup yq (1 of 3)`, `name: setup yq (2 of 3)`, `name: setup yq (3 of 3)`).
-- **Matrix-based names**: Include matrix variables in step names for identification (e.g. `name: test (${{ matrix.gv-source }}, ${{ matrix.gv-config }})`).
-
-### Naming Conventions
-
-- **Inputs/outputs**: kebab-case (e.g. `image-registry`, `tag-override`, `git-user-name`).
-- **Environment variables**: ALL_UPPERCASE with underscores (e.g. `IMAGE_REGISTRY`, `TAG_OVERRIDE`, `MANIFEST_PATHS`).
-- **Secrets**: ALL_UPPERCASE with underscores (e.g. `GITHUB_TOKEN`, `GH_PAT_GITOPS`, `NUGET_API_KEY`).
-
-### YAML Style
-
-- **2-space indentation** for all workflow and action YAML files.
-- Do not quote strings unless YAML requires it (e.g. values containing special characters, reserved words like `true`/`false`/`null`, or strings that could be misinterpreted as another type).
-- For `workflow_dispatch` string inputs that represent booleans, use quoted defaults (e.g. `default: 'true'`).
-- Use `|` (pipe) for multi-line `run` scripts. Use `>` for flowing multi-line description text.
-- One blank line between major YAML sections (`on:`, `env:`, `jobs:`). No blank lines within input/output lists.
-
-### Reusable Workflows
-
-- **File naming**: Prefix reusable workflow filenames with an underscore to distinguish them from top-level entry-point workflows (e.g. `_gitops-helm-update.yml`, `_deploy-maui-android.yml`).
-- **Same repo**: `uses: ./.github/workflows/_filename.yml`
-- **Cross-repo**: `uses: owner/repo/.github/workflows/filename.yml@v1`
-- Prefer `secrets: inherit` unless there is a specific reason to restrict secrets passed to the called workflow.
-
-### Composite Actions
-
-- Declare `shell: bash` explicitly on every `run` step — composite actions do not inherit a default shell.
-- Reference scripts relative to the action root using `${{ github.action_path }}/scripts/name.sh`.
-
-### Security
-
-- Deny all permissions at workflow level (`permissions: {}`), grant only what each job requires.
-- Skip bot-triggered runs conditionally: `if: github.actor != 'dependabot[bot]'`.
-- Pass tokens via `stdin` for registry logins (e.g. `echo "$TOKEN" | docker login --password-stdin`).
-- OCI registry, repository and tag values must be forced to lowercase (e.g. `${IMAGE_REGISTRY,,}`).
-
-### GitVersion
-
-- Always set `fetch-depth: 0` on checkout when GitVersion is in use.
-- Default config file is `GitVersion.yml` in the repository root.
-- Prefer `semVer` for tags and releases; use `fullSemVer` (via the `version` output) for build versioning and pre-release identifiers.
-
-## Documentation
-
-### README Consistency
-
-- Every project's `README.md` must stay in sync with its implementation. During any refactoring — and **always** before creating a new PR — scan the `README.md` for inconsistencies: outdated input/output names, missing or removed configuration options, or inaccurate examples. Update the README as part of the same change, not as a follow-up.
-- **Mermaid diagrams**: Use Mermaid diagrams in `README.md` files to illustrate GitHub Actions workflow chains. These diagrams make complex relationships immediately visible and must be kept in sync with the code they describe.
-- **Markdown tables**: Table separator rows must use spaces around pipes to match the spaced style used in header and data rows (e.g. `| --- | --- |` not `|---|---|`). This prevents MD060 (table-column-style) warnings.
+The conventions below always apply, regardless of the file being edited.
 
 ## Copilot Workflow
 
+- **Test execution**: Never run tests automatically — they may be integration tests requiring extra setup. Always prompt (ideally with a visual yes/no button) before running any tests.
 - **Preserve git history during renames/moves**: When renaming or relocating files, first perform the rename/move (preferably via `git mv`), then make content edits to the file in its new location/name. This two-step approach preserves git history across the rename. Do not delete-and-recreate files when a rename or move is the intent.
+- **Multi-repo commits**: When a single change spans multiple repositories, separate per-repository commit messages are acceptable (but not mandatory). Prefer them where the changes are disconnected, or where one repository should not really "know about" the other (e.g. an app repo and a GitOps repo). A single shared commit message is fine when the change is genuinely coupled.
+
+## Repository Structure
+
+Every f2calv repository follows a consistent layout, regardless of language:
+
+- **Root files**: `README.md`, `LICENSE`, `GitVersion.yml`, `.editorconfig`, `.gitattributes`, `.gitignore`, and `.pre-commit-config.yaml` live in the repository root.
+- **Source code** lives under `src/`. *(Exception: GitHub Action repositories keep `action.yml` at the root per the GitHub Actions convention.)*
+- **Tooling** lives in dot-prefixed folders — `.github/` (workflows, instructions), `.scripts/`, `.devcontainer/`, `.docker/`, `.config/`, `.vscode/`.
+- **Additional documentation** beyond the root `README.md` lives as Markdown under `docs/`.
+- **`.gitattributes`** standardises line endings across Windows/Linux. Use:
+
+  ```gitattributes
+  * text=auto eol=lf
+  *.{cmd,[cC][mM][dD]} text eol=crlf
+  *.{bat,[bB][aA][tT]} text eol=crlf
+  ```
+
+- **`.editorconfig`** is the single source of truth for indentation, line endings, and analyzer/formatting rules.
+- **`GitVersion.yml`** in the root drives semantic-versioning rules.
 
 ## Misc
 
-- When detecting new conventions or patterns in the codebase, add them to this document and apply them retroactively where applicable.
+- When detecting new conventions or patterns in the codebase, add them to the appropriate `.github/instructions/*.instructions.md` file (or this file for cross-cutting workflow rules) and apply them retroactively where applicable.
+- Keep this file and the `.github/instructions/` files in sync across repositories based on the common synced guidelines.
+
+---
+
+## Project-Specific Overrides
+
+<!-- This section is excluded from cross-repository sync. Place any repo-specific rules below. -->
