@@ -7,7 +7,11 @@
     // Features to add to the dev container. More info: https://containers.dev/features.
     "features": {
         "ghcr.io/devcontainers-extra/features/pre-commit:2": {},
-        "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
+        //moby must be false on Debian trixie - the feature hard-fails because moby-cli is
+        //not published for it. Installs Docker CE CLI instead.
+        "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+            "moby": false
+        },
         "ghcr.io/devcontainers/features/github-cli:1": {},
         "ghcr.io/eitsupi/devcontainer-features/jq-likes:2": {
             "jqVersion": "latest",
