@@ -202,11 +202,7 @@ runs:
           && steps.packages.outputs.count > 0
           && ((inputs.push == 'true' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
             || inputs.push-preview == 'true')
-      run: |
-        if [[ -z "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" || -z "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}" ]]; then
-          echo "::error title=OIDC unavailable::The calling job must declare permissions: id-token: write to use Trusted Publishing."
-          exit 1
-        fi
+      run: "${{ github.action_path }}/.scripts/nuget-trusted-publishing-preflight.sh"
 
     - name: nuget trusted publishing (2 of 2) - exchange oidc token for api key
       shell: bash
@@ -219,33 +215,7 @@ runs:
         NUGET_USER: ${{ inputs.nuget-user }}
         NUGET_AUDIENCE: https://www.nuget.org
         NUGET_TOKEN_ENDPOINT: https://www.nuget.org/api/v2/token
-      run: |
-        set -euo pipefail
-
-        oidc_response=$(curl --silent --show-error --fail-with-body \
-          --header "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-          "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=$(jq -rn --arg a "$NUGET_AUDIENCE" '$a|@uri')")
-        oidc_token=$(jq -r '.value // empty' <<<"$oidc_response")
-        if [[ -z "$oidc_token" ]]; then
-          echo "::error title=OIDC::GitHub did not return an id token."
-          exit 1
-        fi
-        echo "::add-mask::$oidc_token"
-
-        exchange_response=$(curl --silent --show-error --fail-with-body \
-          --request POST "$NUGET_TOKEN_ENDPOINT" \
-          --header "Authorization: Bearer $oidc_token" \
-          --header "Content-Type: application/json" \
-          --data "$(jq -nc --arg u "$NUGET_USER" '{username: $u, tokenType: "ApiKey"}')")
-        api_key=$(jq -r '.apiKey // empty' <<<"$exchange_response")
-        if [[ -z "$api_key" ]]; then
-          echo "::error title=Trusted Publishing::nuget.org did not return an apiKey. Check the policy owner, repository, workflow filename and environment on nuget.org."
-          exit 1
-        fi
-        echo "::add-mask::$api_key"
-
-        echo "NUGETORG_API_KEY=$api_key" >> $GITHUB_ENV
-        echo "Short-lived nuget.org API key acquired for user $NUGET_USER, expires $(jq -r '.expires // "unknown"' <<<"$exchange_response")"
+      run: "${{ github.action_path }}/.scripts/nuget-trusted-publishing-exchange.sh"
 
     - name: dotnet push (api.nuget.org)
       shell: bash
