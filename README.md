@@ -85,7 +85,7 @@ These projects use this action directly due to a non-standard testing process:
 | `checkout` | boolean | | `true` | Checkout the current repository |
 | `checkout-ref` | string | | | Git ref to checkout e.g. `v1.2.3` or a commit SHA. Empty checks out the triggering ref. |
 | `configuration` | string | | `Release` | .NET build configuration e.g. `Debug` or `Release` |
-| `solution-name` | string | | | Specify exactly which .NET solution or project to build when multiple exist e.g. `MySolution.sln` or `MyProject.csproj` |
+| `solution-name` | string | | | .NET solution or project to build e.g. `MySolution.slnx` or `MyProject.csproj`. Empty targets the working directory. |
 | `push` | boolean | | `true` | Push packages to NuGet feeds |
 | `push-preview` | boolean | | `false` | Push a pre-release NuGet package from a non-default branch. The version's SemVer pre-release suffix signals preview status to NuGet. |
 | `execute-tests` | boolean | | `true` | Execute unit tests |
@@ -118,6 +118,35 @@ Credential per feed:
 When `package-filter` is set, only `.nupkg` files whose filename starts with one of the specified prefixes are pushed. This is useful during preview pushes to avoid cluttering nuget.org with packages that haven't actually changed.
 
 For example, if a solution produces `CasCap.Common.Caching`, `CasCap.Common.Extensions`, and `CasCap.Common.Serialization` packages, setting `package-filter: CasCap.Common.Caching` will push only the caching package.
+
+## Testing and code coverage
+
+`dotnet test` runs in [Microsoft.Testing.Platform](https://learn.microsoft.com/dotnet/core/testing/unit-testing-with-dotnet-test#mtp-mode-of-dotnet-test) (MTP) mode, which every consuming repository must opt into via `global.json`:
+
+```json
+{
+  "test": {
+    "runner": "Microsoft.Testing.Platform"
+  }
+}
+```
+
+MTP mode is mandatory rather than optional — `xunit.v3` 4.0.0 dropped the VSTest bridge, and the .NET 10 SDK fails any VSTest-targeted `dotnet test` run against an MTP test project.
+
+Because MTP does not accept a positional path, `solution-name` is translated into `--solution` (for `.sln` / `.slnx`) or `--project` (for `.csproj`). Any other value fails the step with an explicit error.
+
+Coverage is collected by the [`Microsoft.Testing.Extensions.CodeCoverage`](https://learn.microsoft.com/dotnet/core/testing/unit-testing-platform-extensions-code-coverage) package, which each test project must reference. The VSTest-era `coverlet.msbuild` / `coverlet.collector` / `--collect` route no longer applies and the following packages can be removed from MTP-only test projects:
+
+- `Microsoft.NET.Test.Sdk` — set `<OutputType>Exe</OutputType>` in the test project when removing it
+- `xunit.runner.visualstudio`
+- `coverlet.collector`
+- `coverlet.msbuild`
+
+The coverage pipeline is:
+
+1. `dotnet test --coverage --coverage-output-format cobertura` writes a `coverage.cobertura.xml` per test project, which the action gathers into `coverage/`.
+2. `ReportGenerator` converts those cobertura reports into lcov under `coveragereport/`.
+3. Coveralls consumes the generated lcov, and `coveragereport/` is published as a build artifact.
 
 ## Outputs
 
