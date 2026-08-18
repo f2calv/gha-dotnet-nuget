@@ -63,16 +63,14 @@ jobs:
 
 The matching Trusted Publisher policy on nuget.org must name this repository, workflow filename and (if used) environment.
 
-Some working examples of this action in active use in my own public repositories, the following projects use this action via a shared [re-usable workflow](https://github.com/f2calv/gha-workflows/blob/main/.github/workflows/dotnet-publish-nuget.yml):
+Some working examples of this action in active use in my own public repositories:
 
 - [dotnet-nuget-test](https://github.com/f2calv/dotnet-nuget-test) - (this project can be used as a template of best practise if required)
-- [CasCap.Apis.GooglePhotos](https://github.com/f2calv/CasCap.Apis.GooglePhotos)
-- [CasCap.GooglePhotosCli](https://github.com/f2calv/CasCap.GooglePhotosCli)
+- [CasCap.Common](https://github.com/f2calv/CasCap.Common)
+- [CasCap.Api.Azure](https://github.com/f2calv/CasCap.Api.Azure)
+- [CasCap.Api.GooglePhotos](https://github.com/f2calv/CasCap.Api.GooglePhotos)
+- [SmartHaus](https://github.com/f2calv/SmartHaus)
 - [yamlizr](https://github.com/f2calv/yamlizr)
-
-These projects use this action directly due to a non-standard testing process:
-
-- [CasCap.Common](https://github.com/f2calv/CasCap.Common) - uses this action [directly](https://github.com/f2calv/CasCap.Common/blob/main/.github/workflows/ci.yml).
 
 ## Inputs
 
