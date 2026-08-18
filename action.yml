@@ -34,8 +34,8 @@ inputs:
     type: string
     description: .NET Configuration e.g. Debug or Release
     default: Release
-  #Empty targets whatever solution/project lives in the working directory. Because 'dotnet test' runs in
-  #Microsoft.Testing.Platform mode the value must resolve to a .sln, .slnx or .csproj file, nothing else.
+  #Empty targets whatever solution/project lives in the working directory. Under Microsoft.Testing.Platform
+  #mode 'dotnet test' rejects a positional path, so the value must then resolve to a .sln, .slnx or .csproj.
   solution-name:
     type: string
     description: .NET solution or project to build e.g. MySolution.slnx or MyProject.csproj
@@ -129,12 +129,15 @@ runs:
         DOTNET_TEST_ARGS: ${{ inputs.dotnet-test-args }}
       run: "${{ github.action_path }}/.scripts/dotnet-test.sh"
 
-    #Microsoft.Testing.Platform emits cobertura, coveralls consumes lcov, so ReportGenerator converts first.
+    #Microsoft.Testing.Platform emits cobertura and coverlet (VSTest mode) emits lcov, coveralls consumes
+    #lcov, so ReportGenerator is pointed at both formats and normalises whichever one is present.
     - name: code coverage - report generator
       if: inputs.execute-tests == 'true' && inputs.code-coverage == 'true'
       uses: danielpalme/ReportGenerator-GitHub-Action@v5
       with:
-        reports: ${{ github.workspace }}/coverage/**/*.cobertura.xml
+        #cobertura comes from MTP mode, lcov from coverlet in VSTest mode. The bare '**.info'
+        #spelling is the one this action shipped for years, so it is kept alongside '**/*.info'.
+        reports: ${{ github.workspace }}/coverage/**/*.cobertura.xml;${{ github.workspace }}/coverage/**.info;${{ github.workspace }}/coverage/**/*.info
         targetdir: ${{ github.workspace }}/coveragereport
         reporttypes: lcov
         tag: ${{ github.run_number }}_${{ github.run_id }}
