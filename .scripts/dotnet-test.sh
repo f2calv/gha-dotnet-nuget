@@ -41,7 +41,9 @@ mkdir -p "$coverage_dir"
 #reports distinct when a solution contains more than one test project. They are gathered up afterwards.
 cmd=(dotnet test)
 cmd+=("${target_args[@]}")
-cmd+=(-c "$CONFIGURATION" --no-restore --no-build --nologo)
+#Note: --nologo is deliberately absent. In MTP mode it makes discovery report "Zero tests ran"
+#and exit 5, even though the same command without it runs the tests. Verified by bisection.
+cmd+=(-c "$CONFIGURATION" --no-restore --no-build)
 cmd+=(--coverage --coverage-output-format cobertura --coverage-output "$coverage_filename")
 
 #dotnet-test-args is a free-form string, word splitting it here is intentional.
