@@ -34,9 +34,11 @@ inputs:
     type: string
     description: .NET Configuration e.g. Debug or Release
     default: Release
+  #Empty targets whatever solution/project lives in the working directory. Because 'dotnet test' runs in
+  #Microsoft.Testing.Platform mode the value must resolve to a .sln, .slnx or .csproj file, nothing else.
   solution-name:
     type: string
-    description: Specify exactly which .NET solution or project to build when multiple exist. e.g. MySolution.sln or MyProject.csproj
+    description: .NET solution or project to build e.g. MySolution.slnx or MyProject.csproj
     default: ''
   push:
     type: boolean
@@ -121,14 +123,28 @@ runs:
     - name: dotnet test
       if: inputs.execute-tests == 'true'
       shell: bash
-      run: dotnet test ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.configuration }} --no-restore --nologo --no-build -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=${{ github.workspace }}/coverage/ ${{ inputs.dotnet-test-args }}
+      env:
+        CONFIGURATION: ${{ steps.setvars.outputs.configuration }}
+        SOLUTION_NAME: ${{ inputs.solution-name }}
+        DOTNET_TEST_ARGS: ${{ inputs.dotnet-test-args }}
+      run: "${{ github.action_path }}/.scripts/dotnet-test.sh"
+
+    #Microsoft.Testing.Platform emits cobertura, coveralls consumes lcov, so ReportGenerator converts first.
+    - name: code coverage - report generator
+      if: inputs.execute-tests == 'true' && inputs.code-coverage == 'true'
+      uses: danielpalme/ReportGenerator-GitHub-Action@v5
+      with:
+        reports: ${{ github.workspace }}/coverage/**/*.cobertura.xml
+        targetdir: ${{ github.workspace }}/coveragereport
+        reporttypes: lcov
+        tag: ${{ github.run_number }}_${{ github.run_id }}
 
     - name: code coverage - coveralls (1 of 2)
       shell: bash
-      if: inputs.execute-tests == 'true'
+      if: inputs.execute-tests == 'true' && inputs.code-coverage == 'true'
       id: coveralls
       run: |
-        files=$(find ${{ github.workspace }}/coverage -type f -printf '%p ')
+        files=$(find ${{ github.workspace }}/coveragereport -type f -name '*.info' -printf '%p ')
         echo "files=$files" >> $GITHUB_OUTPUT
 
     - name: code coverage - coveralls (2 of 2)
@@ -136,15 +152,6 @@ runs:
       uses: coverallsapp/github-action@v2
       with:
         files: ${{ steps.coveralls.outputs.files }}
-
-    - name: code coverage - report generator
-      if: inputs.execute-tests == 'true' && inputs.code-coverage == 'true'
-      uses: danielpalme/ReportGenerator-GitHub-Action@v5
-      with:
-        reports: ${{ github.workspace }}/coverage/**.info
-        targetdir: ${{ github.workspace }}/coveragereport
-        reporttypes: lcov
-        tag: ${{ github.run_number }}_${{ github.run_id }}
 
     - name: code coverage - upload-artifact
       if: inputs.execute-tests == 'true' && inputs.code-coverage == 'true'
