@@ -43,11 +43,31 @@ steps:
     package-filter: CasCap.Common.Caching
 ```
 
+Trusted Publishing replaces the long-lived `NUGET_API_KEY` with a short-lived key exchanged from a GitHub Actions OIDC token. A composite action cannot request permissions, so the **calling job** must declare them:
+
+```yaml
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write #NuGet Trusted Publishing OIDC token
+      contents: read
+      packages: write #nuget.pkg.github.com
+    steps:
+      - uses: f2calv/gha-dotnet-nuget@v2
+        with:
+          version: 1.2.3
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          nuget-user: f2calv
+```
+
+The matching Trusted Publisher policy on nuget.org must name this repository, workflow filename and (if used) environment.
+
 Some working examples of this action in active use in my own public repositories, the following projects use this action via a shared [re-usable workflow](https://github.com/f2calv/gha-workflows/blob/main/.github/workflows/dotnet-publish-nuget.yml):
 
-- [gha-dotnet-nuget-test](https://github.com/f2calv/gha-dotnet-nuget-test) - (this project can be used as a template of best practise if required)
+- [dotnet-nuget-test](https://github.com/f2calv/dotnet-nuget-test) - (this project can be used as a template of best practise if required)
 - [CasCap.Apis.GooglePhotos](https://github.com/f2calv/CasCap.Apis.GooglePhotos)
-- [CasCap.GooglePhotosCli](https://github.com/f2calv/CasCap.Apis.GooglePhotos)
+- [CasCap.GooglePhotosCli](https://github.com/f2calv/CasCap.GooglePhotosCli)
 - [yamlizr](https://github.com/f2calv/yamlizr)
 
 These projects use this action directly due to a non-standard testing process:
@@ -60,8 +80,10 @@ These projects use this action directly due to a non-standard testing process:
 | ----- | ---- | -------- | ------- | ----------- |
 | `version` | string | ✅ | | NuGet package version e.g. `1.2.301-feature-my-feature.12` |
 | `GITHUB_TOKEN` | string | | | GitHub token to push to GitHub Packages e.g. `${{ secrets.GITHUB_TOKEN }}` |
-| `NUGET_API_KEY` | string | | | NuGet API key for nuget.org e.g. `${{ secrets.NUGET_API_KEY }}`. Without this the nuget.org push step is skipped. |
+| `nuget-user` | string | | | nuget.org profile username of the Trusted Publishing policy creator |
+| `NUGET_API_KEY` | string | | | **DEPRECATED**, superseded by `nuget-user`. Ignored when `nuget-user` is set. |
 | `checkout` | boolean | | `true` | Checkout the current repository |
+| `checkout-ref` | string | | | Git ref to checkout e.g. `v1.2.3` or a commit SHA. Empty checks out the triggering ref. |
 | `configuration` | string | | `Release` | .NET build configuration e.g. `Debug` or `Release` |
 | `solution-name` | string | | | Specify exactly which .NET solution or project to build when multiple exist e.g. `MySolution.sln` or `MyProject.csproj` |
 | `push` | boolean | | `true` | Push packages to NuGet feeds |
@@ -85,6 +107,11 @@ These projects use this action directly due to a non-standard testing process:
 | Non-default branch, `push-preview: false` | ❌ | ❌ |
 
 Preview packages are only pushed to nuget.org — GitHub Packages is reserved for stable releases from the default branch. NuGet automatically recognises a package as pre-release when the version contains a SemVer pre-release suffix (e.g. `1.2.3-my-feature.4`).
+
+Credential per feed:
+
+- **nuget.org** — the short-lived key exchanged via Trusted Publishing when `nuget-user` is set, otherwise the deprecated `NUGET_API_KEY`. When neither is supplied the push is skipped with a warning.
+- **GitHub Packages** — always `GITHUB_TOKEN`; Trusted Publishing does not apply.
 
 ### Package filtering
 

@@ -7,6 +7,12 @@ inputs:
     type: boolean
     description: Checkout the current repository?
     default: true
+  #Empty checks out the triggering ref. Set to a tag or SHA to rebuild and re-publish an older
+  #version; the push gates still evaluate github.ref, i.e. the branch the workflow ran from.
+  checkout-ref:
+    type: string
+    description: Git ref to checkout e.g. v1.2.3 or a commit SHA
+    default: ''
   version:
     type: string
     description: NuGet package version e.g. 1.2.301-feature-my-feature.12
@@ -14,9 +20,16 @@ inputs:
   GITHUB_TOKEN:
     description: GitHub token to push to GitHub packages e.g. secrets.GITHUB_TOKEN
     type: string
+  #DEPRECATED, superseded by nuget-user (Trusted Publishing). Ignored when nuget-user is set.
   NUGET_API_KEY:
-    description: NuGet API key to push to nuget.org feed e.g. secrets.NUGET_API_KEY
+    description: Long-lived NuGet API key e.g. secrets.NUGET_API_KEY
     type: string
+  #When set, an OIDC token is exchanged for a short-lived nuget.org API key in place of
+  #NUGET_API_KEY. The calling job must declare permissions with id-token write.
+  nuget-user:
+    type: string
+    description: nuget.org profile username of the Trusted Publishing policy creator
+    default: ''
   configuration:
     type: string
     description: .NET Configuration e.g. Debug or Release
@@ -78,6 +91,7 @@ runs:
       if: inputs.checkout == 'true'
       with:
         fetch-depth: 0
+        ref: ${{ inputs.checkout-ref }}
 
     - name: set vars
       shell: bash
@@ -86,7 +100,7 @@ runs:
         configuration="${{ inputs.configuration }}"
         echo "configuration=${configuration:-"Release"}" >> $GITHUB_OUTPUT
 
-    - uses: actions/setup-dotnet@v5
+    - uses: actions/setup-dotnet@v6
       with:
         dotnet-version: |
           8.0.x
@@ -181,17 +195,44 @@ runs:
         printf '%s\n' "${packages[@]}" > "${{ runner.temp }}/nupkg-list.txt"
         echo "count=${#packages[@]}" >> $GITHUB_OUTPUT
 
+    - name: nuget trusted publishing (1 of 2) - preflight
+      shell: bash
+      if: |
+        inputs.nuget-user != ''
+          && steps.packages.outputs.count > 0
+          && ((inputs.push == 'true' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+            || inputs.push-preview == 'true')
+      run: "${{ github.action_path }}/.scripts/nuget-trusted-publishing-preflight.sh"
+
+    - name: nuget trusted publishing (2 of 2) - exchange oidc token for api key
+      shell: bash
+      if: |
+        inputs.nuget-user != ''
+          && steps.packages.outputs.count > 0
+          && ((inputs.push == 'true' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+            || inputs.push-preview == 'true')
+      env:
+        NUGET_USER: ${{ inputs.nuget-user }}
+        NUGET_AUDIENCE: https://www.nuget.org
+        NUGET_TOKEN_ENDPOINT: https://www.nuget.org/api/v2/token
+      run: "${{ github.action_path }}/.scripts/nuget-trusted-publishing-exchange.sh"
+
     - name: dotnet push (api.nuget.org)
       shell: bash
+      env:
+        #NUGETORG_API_KEY is exported to $GITHUB_ENV by the trusted publishing step; NUGET_API_KEY is the deprecated fallback.
+        NUGET_LEGACY_API_KEY: ${{ inputs.NUGET_API_KEY }}
       run: |
-        if [[ -n "${{ inputs.NUGET_API_KEY }}" ]]; then
-          while IFS= read -r pkg; do
-            [[ -z "$pkg" ]] && continue
-            dotnet nuget push "$pkg" --skip-duplicate -k ${{ inputs.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json ${{ inputs.dotnet-push-args }}
-          done < "${{ runner.temp }}/nupkg-list.txt"
-        else
-          echo "::warning title=NUGET_API_KEY::NUGET_API_KEY is missing from secrets, skipping push to api.nuget.org"
+        set -euo pipefail
+        api_key="${NUGETORG_API_KEY:-$NUGET_LEGACY_API_KEY}"
+        if [[ -z "$api_key" ]]; then
+          echo "::warning title=nuget.org::No nuget.org credential available (set nuget-user for Trusted Publishing, or NUGET_API_KEY), skipping push to api.nuget.org"
+          exit 0
         fi
+        while IFS= read -r pkg; do
+          [[ -z "$pkg" ]] && continue
+          dotnet nuget push "$pkg" --skip-duplicate --api-key "$api_key" --source https://api.nuget.org/v3/index.json ${{ inputs.dotnet-push-args }}
+        done < "${{ runner.temp }}/nupkg-list.txt"
       if: |
         steps.packages.outputs.count > 0
           && ((inputs.push == 'true' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))

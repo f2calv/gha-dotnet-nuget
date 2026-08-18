@@ -14,6 +14,7 @@ Detailed conventions live in scoped instruction files under `.github/instruction
 | File | Applies to | Covers |
 | --- | --- | --- |
 | `github-actions.instructions.md` | workflows / `action.yml` | GitHub Actions naming, YAML, security, GitVersion |
+| `bash.instructions.md` | `**/*.sh` | Bash scripting structure, error handling, logging, testability |
 | `documentation.instructions.md` | `**/*.md` | README consistency & Mermaid diagrams |
 
 The conventions below always apply, regardless of the file being edited.
