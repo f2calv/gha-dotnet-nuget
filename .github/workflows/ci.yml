@@ -3,23 +3,55 @@ name: ci
 on:
   workflow_dispatch:
   push:
-    branches-ignore:
-      - "preview/**"
-    paths-ignore:
-      - .github/copilot-instructions.md
-      - .github/dependabot.yml
-      - LICENSE
-      - README.md
+    branches: [main]
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
 
 jobs:
   lint:
-    if: github.ref != format('refs/heads/{0}', github.event.repository.default_branch)
     uses: f2calv/gha-workflows/.github/workflows/lint.yml@v1
+    permissions:
+      contents: read
+
+  versioning:
+    uses: f2calv/gha-workflows/.github/workflows/gha-release-versioning.yml@v1
+    with:
+      tag-and-release: false
+    permissions:
+      contents: read
+
+  validate:
+    needs: [versioning]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: README floating major tag
+        env:
+          EXPECTED_ACTION_REF: ${{ github.repository }}@v${{ needs.versioning.outputs.major }}
+        run: |
+          awk -v ref="$EXPECTED_ACTION_REF" '
+            index($0, ref) {
+              suffix = substr($0, index($0, ref) + length(ref), 1)
+              if (suffix == "" || suffix !~ /[[:alnum:]_.-]/) found = 1
+            }
+            END { exit !found }
+          ' README.md
 
   release:
+    needs: [lint, versioning, validate]
+    if: needs.versioning.outputs.release-exists == 'false'
+      && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     uses: f2calv/gha-workflows/.github/workflows/gha-release-versioning.yml@v1
+    with:
+      semVer: ${{ format('{0}.{1}.{2}', needs.versioning.outputs.major, needs.versioning.outputs.minor, needs.versioning.outputs.patch) }}
     permissions:
       contents: write
