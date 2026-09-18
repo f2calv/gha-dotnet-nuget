@@ -40,6 +40,7 @@
                 "mutantdino.resourcemonitor",
                 "usernamehw.errorlens",
                 "davidanson.vscode-markdownlint",
+                "redhat.vscode-yaml",
                 "github.vscode-github-actions"
             ]
         }
