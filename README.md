@@ -95,6 +95,10 @@ Some working examples of this action in active use in my own public repositories
 | `dotnet-push-args` | string | | | Optional extra arguments for `dotnet nuget push` |
 | `package-filter` | string | | | Comma-separated list of package ID prefixes to push e.g. `CasCap.Common.Caching,CasCap.Common.Extensions`. When empty all packages are pushed. |
 
+`execute-tests` and `code-coverage` are opt-out controls. An empty value does not override their safe
+defaults, and `execute-tests: false` is ignored on pull requests so a missing dispatch-only boolean
+cannot silently remove the required test gate. Explicit opt-out remains available on other events.
+
 ## Push behaviour
 
 | Scenario | nuget.org | GitHub Packages |
