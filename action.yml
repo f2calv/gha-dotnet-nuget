@@ -121,7 +121,8 @@ runs:
       run: dotnet build ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.configuration }} --no-restore --nologo -p:Version='${{ inputs.version }}' -p:SourceRevisionId=${{ github.sha }} ${{ inputs.dotnet-build-args }}
 
     - name: dotnet test
-      if: inputs.execute-tests == 'true'
+      #A pull request must test even when an unset dispatch-only input is forwarded as false.
+      if: github.event_name == 'pull_request' || inputs.execute-tests != 'false'
       shell: bash
       env:
         CONFIGURATION: ${{ steps.setvars.outputs.configuration }}
@@ -132,7 +133,7 @@ runs:
     #Microsoft.Testing.Platform emits cobertura and coverlet (VSTest mode) emits lcov, coveralls consumes
     #lcov, so ReportGenerator is pointed at both formats and normalises whichever one is present.
     - name: code coverage - report generator
-      if: inputs.execute-tests == 'true' && inputs.code-coverage == 'true'
+      if: (github.event_name == 'pull_request' || inputs.execute-tests != 'false') && inputs.code-coverage != 'false'
       uses: danielpalme/ReportGenerator-GitHub-Action@v5
       with:
         #cobertura comes from MTP mode, lcov from coverlet in VSTest mode. The bare '**.info'
@@ -144,20 +145,20 @@ runs:
 
     - name: code coverage - coveralls (1 of 2)
       shell: bash
-      if: inputs.execute-tests == 'true' && inputs.code-coverage == 'true'
+      if: (github.event_name == 'pull_request' || inputs.execute-tests != 'false') && inputs.code-coverage != 'false'
       id: coveralls
       run: |
         files=$(find ${{ github.workspace }}/coveragereport -type f -name '*.info' -printf '%p ')
         echo "files=$files" >> $GITHUB_OUTPUT
 
     - name: code coverage - coveralls (2 of 2)
-      if: inputs.execute-tests == 'true' && inputs.code-coverage == 'true'
+      if: (github.event_name == 'pull_request' || inputs.execute-tests != 'false') && inputs.code-coverage != 'false'
       uses: coverallsapp/github-action@v2
       with:
         files: ${{ steps.coveralls.outputs.files }}
 
     - name: code coverage - upload-artifact
-      if: inputs.execute-tests == 'true' && inputs.code-coverage == 'true'
+      if: (github.event_name == 'pull_request' || inputs.execute-tests != 'false') && inputs.code-coverage != 'false'
       uses: actions/upload-artifact@v7
       with:
         name: coveragereport
