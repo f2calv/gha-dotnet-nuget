@@ -1,12 +1,12 @@
 {
-    "recommendations": [
-        "ms-vscode.powershell",
-        "ms-azuretools.vscode-containers",
-        "ms-vscode-remote.vscode-remote-extensionpack",
-        "mutantdino.resourcemonitor",
-        "usernamehw.errorlens",
-        "davidanson.vscode-markdownlint",
-        "redhat.vscode-yaml",
-        "github.vscode-github-actions"
-    ]
+  "recommendations": [
+    "ms-vscode.powershell",
+    "ms-azuretools.vscode-containers",
+    "ms-vscode-remote.vscode-remote-extensionpack",
+    "mutantdino.resourcemonitor",
+    "usernamehw.errorlens",
+    "davidanson.vscode-markdownlint",
+    "redhat.vscode-yaml",
+    "github.vscode-github-actions"
+  ]
 }
