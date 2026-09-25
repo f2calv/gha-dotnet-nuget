@@ -123,14 +123,7 @@ For example, if a solution produces `CasCap.Common.Caching`, `CasCap.Common.Exte
 
 ## Testing and code coverage
 
-Both `dotnet test` runner modes are supported. The mode is detected from the consuming repository's `global.json`, so no action input needs to change:
-
-| `global.json` | Mode | Coverage |
-| --- | --- | --- |
-| `test.runner` is `Microsoft.Testing.Platform` | [Microsoft.Testing.Platform](https://learn.microsoft.com/dotnet/core/testing/unit-testing-with-dotnet-test#mtp-mode-of-dotnet-test) (MTP) | cobertura |
-| anything else, or no `global.json` | VSTest (default) | coverlet lcov |
-
-VSTest is the default purely for backward compatibility — a repository that has not opted in keeps working unchanged. Opt into MTP by adding:
+The action requires [Microsoft.Testing.Platform](https://learn.microsoft.com/dotnet/core/testing/unit-testing-with-dotnet-test#mtp-mode-of-dotnet-test). Each consuming repository selects it in `global.json`:
 
 ```json
 {
@@ -140,27 +133,23 @@ VSTest is the default purely for backward compatibility — a repository that ha
 }
 ```
 
-Opting in is necessary once a test project goes MTP-only — `xunit.v3` 4.0.0 dropped the VSTest bridge, and the .NET 10 SDK fails any VSTest-targeted `dotnet test` run against an MTP test project.
-
-### MTP mode
+The action fails before testing when the file or selection is absent. VSTest fallback is deliberately
+unsupported: `xunit.v3` 4.0.0 dropped the VSTest bridge, and this action follows the forward-only
+.NET 10 test model.
 
 MTP does not accept a positional path, so `solution-name` is translated into `--solution` (for `.sln` / `.slnx`) or `--project` (for `.csproj`). Any other value fails the step with an explicit error.
 
-Coverage is collected by the [`Microsoft.Testing.Extensions.CodeCoverage`](https://learn.microsoft.com/dotnet/core/testing/unit-testing-platform-extensions-code-coverage) package, which each test project must reference. The VSTest-era `coverlet.msbuild` / `coverlet.collector` / `--collect` route no longer applies and the following packages can be removed from MTP-only test projects:
+Coverage is collected by the [`Microsoft.Testing.Extensions.CodeCoverage`](https://learn.microsoft.com/dotnet/core/testing/unit-testing-platform-extensions-code-coverage) package, which each test project must reference. Remove these VSTest-era packages:
 
 - `Microsoft.NET.Test.Sdk` — set `<OutputType>Exe</OutputType>` in the test project when removing it
 - `xunit.runner.visualstudio`
 - `coverlet.collector`
 - `coverlet.msbuild`
 
-### VSTest mode
-
-`solution-name` is passed through as a bare positional path. Coverage is collected by `coverlet.msbuild` (`-p:CollectCoverage=true -p:CoverletOutputFormat=lcov`), which each test project must reference.
-
 ### Coverage pipeline
 
-1. `dotnet test` writes a cobertura report per test project (MTP, gathered into `coverage/`) or lcov directly into `coverage/` (VSTest).
-2. `ReportGenerator` reads both formats from `coverage/` and normalises them to lcov under `coveragereport/`.
+1. `dotnet test` writes a cobertura report per test project and gathers the reports into `coverage/`.
+2. `ReportGenerator` reads cobertura from `coverage/` and normalises it to lcov under `coveragereport/`.
 3. Coveralls consumes the generated lcov, and `coveragereport/` is published as a build artifact.
 
 ## Outputs
