@@ -1,76 +1,59 @@
-# GitHub Action: .NET Build/Test/Pack/Push
+# gha-dotnet-nuget
 
-This GitHub Action builds .NET class libraries and pushes the packages to both the official NuGet feed and also GitHub Packages. This action by default is expecting to find a single .NET solution file (.sln) in the base of your repository - and one or more class libraries with `<IsPackable>true</IsPackable>` set in the csproj file(s).
+`gha-dotnet-nuget` is a composite GitHub Action for .NET package maintainers: restore, build, test with Microsoft.Testing.Platform, pack, and optionally publish to nuget.org and GitHub Packages.
 
-Note: `<IsPackable>true</IsPackable>` is a default setting in a csproj file, so be sure to disable IsPackable for other projects via a `Directory.Builds.Props` file else these other projects will be pushed to the NuGet feed as well!
+[![Marketplace](https://img.shields.io/badge/Marketplace-.NET%20Build%2FTest%2FPack%2FPush-blue)](https://github.com/marketplace/actions/net-build-test-pack-push)
+[![CI](https://github.com/f2calv/gha-dotnet-nuget/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/f2calv/gha-dotnet-nuget/actions/workflows/ci.yml)
 
-Currently configured for these .NET versions:
+The [Action contract](https://github.com/f2calv/gha-dotnet-nuget/blob/main/action.yml) installs .NET SDKs 8, 9 and 10. Use a Linux runner with Bash, `jq` and GNU `find` (for example `ubuntu-24.04`). Package projects must be packable; set `IsPackable` to `false` for projects that must not ship. Push discovery searches `src/**/*.nupkg`, so custom pack output outside `src/` will not be published.
 
-- .NET 8.0.x
-- .NET 9.0.x
-- .NET 10.0.x
+## Usage
 
-## Examples
+Call the Action as a **step**, not a reusable-workflow job. This build-only caller needs no publishing credentials:
 
 ```yaml
-steps:
-
-# Minimal usage example will create packages but not push them.
-- uses: f2calv/gha-dotnet-nuget@v2
-  with:
-    version: 1.2.3
-
-# Create packages and push to GitHub Packages feed.
-- uses: f2calv/gha-dotnet-nuget@v2
-  with:
-    version: 1.2.3
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-# Complete usage example creates packages and pushes to both NuGet and GitHub Packages feed.
-- uses: f2calv/gha-dotnet-nuget@v2
-  with:
-    version: 1.2.3
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-    configuration: Release
-
-# Push a pre-release package from a non-default branch, filtered to a specific package.
-- uses: f2calv/gha-dotnet-nuget@v2
-  with:
-    version: 1.2.3-my-feature.4
-    NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-    push-preview: true
-    package-filter: CasCap.Common.Caching
+name: packages
+on: [push, pull_request]
+permissions: {}
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: f2calv/gha-dotnet-nuget@v2
+        id: packages
+        with:
+          version: 1.2.3
+          push: false
 ```
 
-Trusted Publishing replaces the long-lived `NUGET_API_KEY` with a short-lived key exchanged from a GitHub Actions OIDC token. A composite action cannot request permissions, so the **calling job** must declare them:
+`@v2` is the published floating-major Action reference; [v2.3.4](https://github.com/f2calv/gha-dotnet-nuget/releases/tag/v2.3.4) is an available immutable release. Do not use floating minor or patch aliases.
+
+The Action checks out the caller repository itself. With `checkout: false`, the caller must first provide the source tree. `checkout-ref` changes the checked-out code, **not** the branch used by publishing gates.
+
+### Publish packages
+
+Trusted Publishing exchanges GitHub's OIDC token for a short-lived nuget.org key. Configure a matching Trusted Publisher policy on nuget.org for the caller repository, workflow filename and environment (if used). The caller job grants the permissions; the composite Action cannot grant them:
 
 ```yaml
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  publish:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
     permissions:
-      id-token: write #NuGet Trusted Publishing OIDC token
       contents: read
-      packages: write #nuget.pkg.github.com
+      id-token: write
+      packages: write
     steps:
       - uses: f2calv/gha-dotnet-nuget@v2
         with:
           version: 1.2.3
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          nuget-user: f2calv
+          nuget-user: ${{ vars.NUGET_USER }}
 ```
 
-The matching Trusted Publisher policy on nuget.org must name this repository, workflow filename and (if used) environment.
-
-Some working examples of this action in active use in my own public repositories:
-
-- [dotnet-nuget-test](https://github.com/f2calv/dotnet-nuget-test) - (this project can be used as a template of best practise if required)
-- [CasCap.Common](https://github.com/f2calv/CasCap.Common)
-- [CasCap.Api.Azure](https://github.com/f2calv/CasCap.Api.Azure)
-- [CasCap.Api.GooglePhotos](https://github.com/f2calv/CasCap.Api.GooglePhotos)
-- [SmartHaus](https://github.com/f2calv/SmartHaus)
-- [yamlizr](https://github.com/f2calv/yamlizr)
+This is a caller-job fragment; use it in a workflow with a `push` trigger. Replace the example package version with your calculated version. Omit `GITHUB_TOKEN` and `packages: write` when publishing only to nuget.org. Omit OIDC permission and `nuget-user` when publishing only to GitHub Packages. The default token must have access to the destination package.
 
 ## Inputs
 
@@ -90,7 +73,7 @@ Some working examples of this action in active use in my own public repositories
 | `code-coverage` | boolean | | `true` | Execute code coverage tools |
 | `dotnet-restore-args` | string | | | Optional extra arguments for `dotnet restore` |
 | `dotnet-build-args` | string | | | Optional extra arguments for `dotnet build` |
-| `dotnet-test-args` | string | | | Optional extra arguments for `dotnet test` |
+| `dotnet-test-args` | string | | | Whitespace-split extra `dotnet test` arguments; not JSON and not shell-quote-aware |
 | `dotnet-pack-args` | string | | | Optional extra arguments for `dotnet pack` |
 | `dotnet-push-args` | string | | | Optional extra arguments for `dotnet nuget push` |
 | `package-filter` | string | | | Comma-separated list of package ID prefixes to push e.g. `CasCap.Common.Caching,CasCap.Common.Extensions`. When empty all packages are pushed. |
@@ -103,12 +86,12 @@ cannot silently remove the required test gate. Explicit opt-out remains availabl
 
 | Scenario | nuget.org | GitHub Packages |
 | --- | --- | --- |
-| Default branch, `push: true` | ✅ | ✅ |
-| Default branch, `push: false` | ❌ | ❌ |
-| Non-default branch, `push-preview: true` | ✅ | ❌ |
+| Default branch, `push: true` | With credential | With token |
+| Default branch, `push: false`, `push-preview: false` | No | No |
+| Any branch, `push-preview: true` | With credential, even if `push: false` | Only default branch with `push: true` |
 | Non-default branch, `push-preview: false` | ❌ | ❌ |
 
-Preview packages are only pushed to nuget.org — GitHub Packages is reserved for stable releases from the default branch. NuGet automatically recognises a package as pre-release when the version contains a SemVer pre-release suffix (e.g. `1.2.3-my-feature.4`).
+Packing runs on the default branch or when `push-preview: true`, even with `push: false`. On other branches the Action only builds/tests. `push-preview` is an independent nuget.org publishing opt-in, not a pre-release-version validator: supply a version such as `1.2.3-preview.4` yourself. GitHub Packages publication is branch-gated, not version-suffix-gated. Keep publishing jobs restricted to trusted events; the Action does not independently exclude pull requests.
 
 Credential per feed:
 
@@ -117,13 +100,13 @@ Credential per feed:
 
 ### Package filtering
 
-When `package-filter` is set, only `.nupkg` files whose filename starts with one of the specified prefixes are pushed. This is useful during preview pushes to avoid cluttering nuget.org with packages that haven't actually changed.
+When `package-filter` is set, only `.nupkg` filenames beginning with a trimmed prefix followed by `.` are pushed. This is a filename-prefix filter, not exact package-ID matching or change detection.
 
-For example, if a solution produces `CasCap.Common.Caching`, `CasCap.Common.Extensions`, and `CasCap.Common.Serialization` packages, setting `package-filter: CasCap.Common.Caching` will push only the caching package.
+For example, if a solution produces `Example.Caching` and `Example.Serialization`, setting `package-filter: Example.Caching` selects the caching package and any package whose filename starts with `Example.Caching.`.
 
 ## Testing and code coverage
 
-The action requires [Microsoft.Testing.Platform](https://learn.microsoft.com/dotnet/core/testing/unit-testing-with-dotnet-test#mtp-mode-of-dotnet-test). Each consuming repository selects it in `global.json`:
+The [test script](https://github.com/f2calv/gha-dotnet-nuget/blob/main/.scripts/dotnet-test.sh) requires [Microsoft.Testing.Platform](https://learn.microsoft.com/dotnet/core/testing/unit-testing-with-dotnet-test#mtp-mode-of-dotnet-test). Merge this selection into the caller's `global.json`:
 
 ```json
 {
@@ -146,6 +129,8 @@ Coverage is collected by the [`Microsoft.Testing.Extensions.CodeCoverage`](https
 - `coverlet.collector`
 - `coverlet.msbuild`
 
+`code-coverage: false` skips ReportGenerator, Coveralls and artifact upload; it does **not** remove the test script's coverage arguments. Test projects still need the coverage extension whenever tests execute. `execute-tests: false` is ignored on pull requests. MTP selection and compatible test projects are caller prerequisites, not automatically migrated by this Action.
+
 ### Coverage pipeline
 
 1. `dotnet test` writes a cobertura report per test project and gathers the reports into `coverage/`.
@@ -157,3 +142,27 @@ Coverage is collected by the [`Microsoft.Testing.Extensions.CodeCoverage`](https
 | Output | Description |
 | ------ | ----------- |
 | `configuration` | Final build configuration used e.g. `Debug` or `Release`. Note: when `configuration` is passed via `workflow_dispatch` the value may be an empty string, so this output always provides a valid non-empty value. |
+
+Read it as `${{ steps.packages.outputs.configuration }}` using the step ID in the first example. Packages are not uploaded as a downloadable artifact; the optional `coveragereport` artifact contains the normalized coverage output.
+
+## Deployment Flow
+
+```mermaid
+flowchart TD
+    A(["Caller job"]) --> B["Checkout if enabled; install SDKs"]
+    B --> C["Restore and build with version"]
+    C --> D{"Tests enabled or pull request?"}
+    D -->|Yes| E["MTP tests with cobertura"]
+    E --> F["Optional ReportGenerator, Coveralls, coverage artifact"]
+    D -->|No| G{"Default branch or push-preview?"}
+    F --> G
+    G -->|Yes| H["Pack and select src packages"]
+    H --> I{"Feed gates and credentials"}
+    I --> J["nuget.org: OIDC or API key"]
+    I --> K["GitHub Packages: default branch and token"]
+```
+
+## Further Reading
+
+- [Public consuming workflow](https://github.com/f2calv/CasCap.Common/blob/main/.github/workflows/ci.yml)
+- [MIT license](https://github.com/f2calv/gha-dotnet-nuget/blob/main/LICENSE)

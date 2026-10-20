@@ -118,7 +118,17 @@ runs:
 
     - name: dotnet build
       shell: bash
-      run: dotnet build ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.configuration }} --no-restore --nologo -p:Version='${{ inputs.version }}' -p:SourceRevisionId=${{ github.sha }} ${{ inputs.dotnet-build-args }}
+      env:
+        #Free-text context values are passed through the environment, never interpolated into the script.
+        GIT_REPOSITORY: ${{ github.repository }}
+        GIT_BRANCH: ${{ github.ref }}
+        BUILD_WORKFLOW: ${{ github.workflow }}
+      run: >-
+        dotnet build ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.configuration }} --no-restore --nologo
+        -p:Version='${{ inputs.version }}' -p:SourceRevisionId='${{ github.sha }}'
+        -p:GitRepository="$GIT_REPOSITORY" -p:GitBranch="$GIT_BRANCH"
+        -p:BuildWorkflow="$BUILD_WORKFLOW" -p:BuildRunId='${{ github.run_id }}'
+        -p:BuildRunNumber='${{ github.run_number }}' ${{ inputs.dotnet-build-args }}
 
     - name: dotnet test
       #A pull request must test even when an unset dispatch-only input is forwarded as false.
