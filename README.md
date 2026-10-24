@@ -28,7 +28,7 @@ jobs:
           push: false
 ```
 
-`@v2` is the published floating-major Action reference; [v2.3.4](https://github.com/f2calv/gha-dotnet-nuget/releases/tag/v2.3.4) is an available immutable release. Do not use floating minor or patch aliases.
+`@v2` is the published floating-major Action reference; [v2.3.4](https://github.com/f2calv/gha-dotnet-nuget/releases/tag/v2.3.4) is an available immutable release. A floating `vMAJOR.MINOR` alias, such as `@v2.3`, is also published for callers that want only patch releases of one minor line.
 
 The Action checks out the caller repository itself. With `checkout: false`, the caller must first provide the source tree. `checkout-ref` changes the checked-out code, **not** the branch used by publishing gates.
 
