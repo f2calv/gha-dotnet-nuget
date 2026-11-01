@@ -73,9 +73,10 @@ This is a caller-job fragment; use it in a workflow with a `push` trigger. Repla
 | `code-coverage` | boolean | | `true` | Execute code coverage tools |
 | `dotnet-restore-args` | string | | | Optional extra arguments for `dotnet restore` |
 | `dotnet-build-args` | string | | | Optional extra arguments for `dotnet build` |
-| `dotnet-test-args` | string | | | Whitespace-split extra `dotnet test` arguments; not JSON and not shell-quote-aware |
+| `dotnet-test-args` | string | | | Extra `dotnet test` arguments: a JSON array of strings, e.g. `["--filter-not-trait", "Category=Integration"]`, or a whitespace-split string that is not shell-quote-aware |
 | `dotnet-pack-args` | string | | | Optional extra arguments for `dotnet pack` |
 | `dotnet-push-args` | string | | | Optional extra arguments for `dotnet nuget push` |
+| `pack` | boolean | | `false` | Pack even when nothing will be pushed, e.g. to validate packaging on a pull request |
 | `package-filter` | string | | | Comma-separated list of package ID prefixes to push e.g. `CasCap.Common.Caching,CasCap.Common.Extensions`. When empty all packages are pushed. |
 
 `execute-tests` and `code-coverage` are opt-out controls. An empty value does not override their safe
@@ -91,7 +92,7 @@ cannot silently remove the required test gate. Explicit opt-out remains availabl
 | Any branch, `push-preview: true` | With credential, even if `push: false` | Only default branch with `push: true` |
 | Non-default branch, `push-preview: false` | ❌ | ❌ |
 
-Packing runs on the default branch or when `push-preview: true`, even with `push: false`. On other branches the Action only builds/tests. `push-preview` is an independent nuget.org publishing opt-in, not a pre-release-version validator: supply a version such as `1.2.3-preview.4` yourself. GitHub Packages publication is branch-gated, not version-suffix-gated. Keep publishing jobs restricted to trusted events; the Action does not independently exclude pull requests.
+Packing runs on the default branch, when `push-preview: true` or when `pack: true`, even with `push: false`. Otherwise the Action only builds and tests. Packages are written to `$RUNNER_TEMP/nupkg` through `PackageOutputPath`, so every packable project in the solution is selected wherever it lives; keep `IsPackable` opt-in. `push-preview` is an independent nuget.org publishing opt-in, not a pre-release-version validator: supply a version such as `1.2.3-preview.4` yourself. GitHub Packages publication is branch-gated, not version-suffix-gated. Keep publishing jobs restricted to trusted events; the Action does not independently exclude pull requests.
 
 Credential per feed:
 
@@ -142,6 +143,7 @@ Coverage is collected by the [`Microsoft.Testing.Extensions.CodeCoverage`](https
 | Output | Description |
 | ------ | ----------- |
 | `configuration` | Final build configuration used e.g. `Debug` or `Release`. Note: when `configuration` is passed via `workflow_dispatch` the value may be an empty string, so this output always provides a valid non-empty value. |
+| `package-count` | Number of packages selected after `package-filter`; empty when packing did not run |
 
 Read it as `${{ steps.packages.outputs.configuration }}` using the step ID in the first example. Packages are not uploaded as a downloadable artifact; the optional `coveragereport` artifact contains the normalized coverage output.
 
@@ -154,13 +156,20 @@ flowchart TD
     C --> D{"Tests enabled or pull request?"}
     D -->|Yes| E["MTP tests with cobertura"]
     E --> F["Optional ReportGenerator, Coveralls, coverage artifact"]
-    D -->|No| G{"Default branch or push-preview?"}
+    D -->|No| G{"Default branch, push-preview or pack?"}
     F --> G
-    G -->|Yes| H["Pack and select src packages"]
+    G -->|Yes| H["Pack to RUNNER_TEMP/nupkg and select packages"]
     H --> I{"Feed gates and credentials"}
     I --> J["nuget.org: OIDC or API key"]
     I --> K["GitHub Packages: default branch and token"]
 ```
+
+## Self-Test
+
+This repository's CI runs the Action from the commit under review against a packable fixture in
+[tests/fixtures](tests/fixtures): restore, build, Microsoft.Testing.Platform tests and pack, with
+`push: false`, so nothing is published. Real publication is exercised by the libraries that use the
+Action when they release.
 
 ## Further Reading
 
