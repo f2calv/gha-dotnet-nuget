@@ -4,80 +4,66 @@ description: Performs steps required to push a versioned NuGet package to the of
 
 inputs:
   checkout:
-    type: boolean
     description: Checkout the current repository?
     default: true
   #Empty checks out the triggering ref. Set to a tag or SHA to rebuild and re-publish an older
   #version; the push gates still evaluate github.ref, i.e. the branch the workflow ran from.
   checkout-ref:
-    type: string
     description: Git ref to checkout e.g. v1.2.3 or a commit SHA
     default: ''
   version:
-    type: string
     description: NuGet package version e.g. 1.2.301-feature-my-feature.12
     required: true
   GITHUB_TOKEN:
     description: GitHub token to push to GitHub packages e.g. secrets.GITHUB_TOKEN
-    type: string
   #DEPRECATED, superseded by nuget-user (Trusted Publishing). Ignored when nuget-user is set.
   NUGET_API_KEY:
     description: Long-lived NuGet API key e.g. secrets.NUGET_API_KEY
-    type: string
   #When set, an OIDC token is exchanged for a short-lived nuget.org API key in place of
   #NUGET_API_KEY. The calling job must declare permissions with id-token write.
   nuget-user:
-    type: string
     description: nuget.org profile username of the Trusted Publishing policy creator
     default: ''
   configuration:
-    type: string
     description: .NET Configuration e.g. Debug or Release
     default: Release
   #Empty targets whatever solution/project lives in the working directory. Microsoft.Testing.Platform
   #rejects a positional path, so a non-empty value must resolve to a .sln, .slnx or .csproj.
   solution-name:
-    type: string
     description: .NET solution or project to build e.g. MySolution.slnx or MyProject.csproj
     default: ''
   push:
-    type: boolean
     description: Should we push packages?
     default: true
   push-preview:
     description: Push a pre-release NuGet package from a non-default branch? The version's SemVer pre-release suffix (e.g. 1.2.3-my-feature.4) signals preview status to NuGet.
-    type: boolean
     default: false
   execute-tests:
     description: Execute unit tests. Default is 'true'
-    type: boolean
     default: true
   code-coverage:
     description: Execute code coverage tools. Default is 'true'
-    type: boolean
     default: true
   dotnet-restore-args:
-    type: string
     description: Optional 'dotnet restore' arguments.
     default: ''
   dotnet-build-args:
-    type: string
     description: Optional 'dotnet build' arguments.
     default: ''
   dotnet-test-args:
-    type: string
     description: Optional 'dotnet test' arguments.
     default: ''
   dotnet-pack-args:
-    type: string
     description: Optional 'dotnet pack' arguments.
     default: ''
   dotnet-push-args:
-    type: string
     description: Optional 'dotnet push' arguments.
     default: ''
+  #Packs without pushing, e.g. to validate packaging on a pull request.
+  pack:
+    description: Pack even when nothing will be pushed.
+    default: 'false'
   package-filter:
-    type: string
     description: Comma-separated list of package ID prefixes to push e.g. 'CasCap.Common.Caching,CasCap.Common.Extensions'. When empty all packages are pushed.
     default: ''
 
@@ -85,6 +71,9 @@ outputs:
   configuration:
     description: .NET Configuration e.g. Debug or Release
     value: ${{ steps.setvars.outputs.configuration }}
+  package-count:
+    description: Number of packages selected for push e.g. 2
+    value: ${{ steps.packages.outputs.count }}
 
 runs:
   using: composite
@@ -187,6 +176,7 @@ runs:
       if: |
         github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
           || inputs.push-preview == 'true'
+          || inputs.pack == 'true'
       env:
         SOLUTION_NAME: ${{ inputs.solution-name }}
         CONFIGURATION: ${{ steps.setvars.outputs.configuration }}
@@ -196,7 +186,9 @@ runs:
         set -euo pipefail
         TARGET=(); [[ -z "$SOLUTION_NAME" ]] || TARGET=("$SOLUTION_NAME")
         read -r -d '' -a ARGS <<< "$DOTNET_PACK_ARGS" || true
-        dotnet pack "${TARGET[@]}" -c "$CONFIGURATION" --nologo --no-build --include-symbols -p:Version="$VERSION" "${ARGS[@]}"
+        #A known output folder: packages are found wherever the project lives, and no stale package is picked up.
+        dotnet pack "${TARGET[@]}" -c "$CONFIGURATION" --nologo --no-build --include-symbols -p:Version="$VERSION" \
+          -p:PackageOutputPath="$RUNNER_TEMP/nupkg" "${ARGS[@]}"
 
     - name: resolve .nupkg files to push
       shell: bash
@@ -204,11 +196,12 @@ runs:
       if: |
         github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
           || inputs.push-preview == 'true'
+          || inputs.pack == 'true'
       env:
         PACKAGE_FILTER: ${{ inputs.package-filter }}
       run: |
         shopt -s globstar nullglob
-        all_packages=("$GITHUB_WORKSPACE"/src/**/*.nupkg)
+        all_packages=("$RUNNER_TEMP"/nupkg/*.nupkg)
         if [[ -n "$PACKAGE_FILTER" ]]; then
           IFS=',' read -ra FILTERS <<< "$PACKAGE_FILTER"
           matched=()

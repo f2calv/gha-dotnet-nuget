@@ -18,3 +18,9 @@ updates:
     schedule:
       interval: weekly
       time: "04:00"
+
+  - package-ecosystem: nuget
+    directory: /tests/fixtures
+    schedule:
+      interval: weekly
+      time: "04:00"

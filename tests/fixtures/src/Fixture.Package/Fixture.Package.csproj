@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <Description>Package built by this Action's CI to exercise build, test and pack; never published.</Description>
+  </PropertyGroup>
+</Project>

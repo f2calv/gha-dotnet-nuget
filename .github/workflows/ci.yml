@@ -26,28 +26,48 @@ jobs:
     permissions:
       contents: read
 
-  validate:
+  #Runs the Action from this commit against tests/fixtures: build, tests, coverage and pack. push is
+  #false, so nothing is published even on the default branch.
+  test:
     needs: [versioning]
     runs-on: ubuntu-24.04
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
-      - name: README floating major tag
+      - uses: ./
+        id: action
+        with:
+          checkout: false
+          version: ${{ needs.versioning.outputs.version }}
+          solution-name: tests/fixtures/Fixture.slnx
+          dotnet-test-args: '["--minimum-expected-tests", "4"]'
+          code-coverage: false
+          pack: true
+          push: false
+
+      - name: assert packages
         env:
-          EXPECTED_ACTION_REF: ${{ github.repository }}@v${{ needs.versioning.outputs.major }}
+          PACKAGE_COUNT: ${{ steps.action.outputs.package-count }}
         run: |
-          awk -v ref="$EXPECTED_ACTION_REF" '
-            index($0, ref) {
-              suffix = substr($0, index($0, ref) + length(ref), 1)
-              if (suffix == "" || suffix !~ /[[:alnum:]_.-]/) found = 1
-            }
-            END { exit !found }
-          ' README.md
+          set -euo pipefail
+          ls -1 "$RUNNER_TEMP/nupkg"
+          test "$PACKAGE_COUNT" = 1
+          compgen -G "$RUNNER_TEMP/nupkg/Fixture.Package.*.snupkg" > /dev/null
 
+  #Reports as validate / readme-ref-check, the required status check name.
+  validate:
+    needs: [versioning]
+    uses: f2calv/gha-workflows/.github/workflows/readme-ref-check.yml@v1
+    with:
+      major: ${{ needs.versioning.outputs.major }}
+    permissions:
+      contents: read
   release:
-    needs: [lint, versioning, validate]
+    needs: [lint, versioning, test, validate]
     if: needs.versioning.outputs.release-exists == 'false'
       && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     uses: f2calv/gha-workflows/.github/workflows/gha-release-versioning.yml@v1
