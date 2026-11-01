@@ -1,0 +1,10 @@
+#zizmor policy: https://docs.zizmor.sh/configuration/
+rules:
+  #Actions are pinned to their floating major tag by convention, never to a commit SHA.
+  unpinned-uses:
+    config:
+      policies:
+        "*": ref-pin
+  #Dependency updates are taken as soon as Dependabot proposes them.
+  dependabot-cooldown:
+    disable: true
