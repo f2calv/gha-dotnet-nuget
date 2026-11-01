@@ -49,9 +49,18 @@ esac
 cmd+=(-c "$CONFIGURATION" --no-restore --no-build)
 cmd+=(--coverage --coverage-output-format cobertura --coverage-output "$coverage_filename")
 
-#dotnet-test-args is a free-form string, word splitting it here is intentional.
+#dotnet-test-args is either a JSON array of strings, matching the shared app-build-dotnet workflow, or a
+#free-form string that is split on whitespace.
 extra_args=()
-read -ra extra_args <<<"$DOTNET_TEST_ARGS"
+if [[ "$DOTNET_TEST_ARGS" == '['* ]]; then
+  if ! jq -e 'type == "array" and all(.[]; type == "string")' <<<"$DOTNET_TEST_ARGS" >/dev/null; then
+    echo "::error::dotnet-test-args must be a JSON array of strings or a plain argument string."
+    exit 1
+  fi
+  mapfile -t extra_args < <(jq -r '.[]' <<<"$DOTNET_TEST_ARGS")
+else
+  read -ra extra_args <<<"$DOTNET_TEST_ARGS"
+fi
 cmd+=("${extra_args[@]}")
 
 echo "${cmd[*]}"

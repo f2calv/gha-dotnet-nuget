@@ -98,9 +98,9 @@ runs:
     - name: set vars
       shell: bash
       id: setvars
-      run: |
-        configuration="${{ inputs.configuration }}"
-        echo "configuration=${configuration:-"Release"}" >> $GITHUB_OUTPUT
+      env:
+        CONFIGURATION: ${{ inputs.configuration }}
+      run: echo "configuration=${CONFIGURATION:-Release}" >> "$GITHUB_OUTPUT"
 
     - uses: actions/setup-dotnet@v6
       with:
@@ -109,26 +109,37 @@ runs:
           9.0.x
           10.0.x
 
+    #Inputs are free text, so scripts only ever read them as quoted environment variables. Argument
+    #strings are split on whitespace only: no globbing, quote parsing or expansion of caller text.
     - name: dotnet restore
       shell: bash
-      run: dotnet restore ${{ inputs.solution-name }} --verbosity minimal ${{ inputs.dotnet-restore-args }}
       env:
+        SOLUTION_NAME: ${{ inputs.solution-name }}
+        DOTNET_RESTORE_ARGS: ${{ inputs.dotnet-restore-args }}
         #NuGet/Home issue 7575 documents this restore workaround.
         NUGET_RESTORE_MSBUILD_ARGS: /p:Configuration=${{ steps.setvars.outputs.configuration }}
+      run: |
+        set -euo pipefail
+        TARGET=(); [[ -z "$SOLUTION_NAME" ]] || TARGET=("$SOLUTION_NAME")
+        read -r -d '' -a ARGS <<< "$DOTNET_RESTORE_ARGS" || true
+        dotnet restore "${TARGET[@]}" --verbosity minimal "${ARGS[@]}"
 
     - name: dotnet build
       shell: bash
       env:
-        #Free-text context values are passed through the environment, never interpolated into the script.
-        GIT_REPOSITORY: ${{ github.repository }}
-        GIT_BRANCH: ${{ github.ref }}
-        BUILD_WORKFLOW: ${{ github.workflow }}
-      run: >-
-        dotnet build ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.configuration }} --no-restore --nologo
-        -p:Version='${{ inputs.version }}' -p:SourceRevisionId='${{ github.sha }}'
-        -p:GitRepository="$GIT_REPOSITORY" -p:GitBranch="$GIT_BRANCH"
-        -p:BuildWorkflow="$BUILD_WORKFLOW" -p:BuildRunId='${{ github.run_id }}'
-        -p:BuildRunNumber='${{ github.run_number }}' ${{ inputs.dotnet-build-args }}
+        SOLUTION_NAME: ${{ inputs.solution-name }}
+        CONFIGURATION: ${{ steps.setvars.outputs.configuration }}
+        VERSION: ${{ inputs.version }}
+        DOTNET_BUILD_ARGS: ${{ inputs.dotnet-build-args }}
+      run: |
+        set -euo pipefail
+        TARGET=(); [[ -z "$SOLUTION_NAME" ]] || TARGET=("$SOLUTION_NAME")
+        read -r -d '' -a ARGS <<< "$DOTNET_BUILD_ARGS" || true
+        dotnet build "${TARGET[@]}" -c "$CONFIGURATION" --no-restore --nologo \
+          -p:Version="$VERSION" -p:SourceRevisionId="$GITHUB_SHA" \
+          -p:GitRepository="$GITHUB_REPOSITORY" -p:GitBranch="$GITHUB_REF" \
+          -p:BuildWorkflow="$GITHUB_WORKFLOW" -p:BuildRunId="$GITHUB_RUN_ID" \
+          -p:BuildRunNumber="$GITHUB_RUN_NUMBER" "${ARGS[@]}"
 
     - name: dotnet test
       #A pull request must test even when an unset dispatch-only input is forwarded as false.
@@ -138,7 +149,7 @@ runs:
         CONFIGURATION: ${{ steps.setvars.outputs.configuration }}
         SOLUTION_NAME: ${{ inputs.solution-name }}
         DOTNET_TEST_ARGS: ${{ inputs.dotnet-test-args }}
-      run: "${{ github.action_path }}/.scripts/dotnet-test.sh"
+      run: bash "$GITHUB_ACTION_PATH/.scripts/dotnet-test.sh"
 
     #Microsoft.Testing.Platform emits cobertura; ReportGenerator normalises it to lcov for Coveralls.
     - name: code coverage - report generator
@@ -155,8 +166,8 @@ runs:
       if: (github.event_name == 'pull_request' || inputs.execute-tests != 'false') && inputs.code-coverage != 'false'
       id: coveralls
       run: |
-        files=$(find ${{ github.workspace }}/coveragereport -type f -name '*.info' -printf '%p ')
-        echo "files=$files" >> $GITHUB_OUTPUT
+        files=$(find "$GITHUB_WORKSPACE/coveragereport" -type f -name '*.info' -printf '%p ')
+        echo "files=$files" >> "$GITHUB_OUTPUT"
 
     - name: code coverage - coveralls (2 of 2)
       if: (github.event_name == 'pull_request' || inputs.execute-tests != 'false') && inputs.code-coverage != 'false'
@@ -173,10 +184,19 @@ runs:
 
     - name: dotnet pack
       shell: bash
-      run: dotnet pack ${{ inputs.solution-name }} -c ${{ steps.setvars.outputs.configuration }} --nologo --no-build --include-symbols -p:Version='${{ inputs.version }}' ${{ inputs.dotnet-pack-args }}
       if: |
         github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
           || inputs.push-preview == 'true'
+      env:
+        SOLUTION_NAME: ${{ inputs.solution-name }}
+        CONFIGURATION: ${{ steps.setvars.outputs.configuration }}
+        VERSION: ${{ inputs.version }}
+        DOTNET_PACK_ARGS: ${{ inputs.dotnet-pack-args }}
+      run: |
+        set -euo pipefail
+        TARGET=(); [[ -z "$SOLUTION_NAME" ]] || TARGET=("$SOLUTION_NAME")
+        read -r -d '' -a ARGS <<< "$DOTNET_PACK_ARGS" || true
+        dotnet pack "${TARGET[@]}" -c "$CONFIGURATION" --nologo --no-build --include-symbols -p:Version="$VERSION" "${ARGS[@]}"
 
     - name: resolve .nupkg files to push
       shell: bash
@@ -184,17 +204,19 @@ runs:
       if: |
         github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
           || inputs.push-preview == 'true'
+      env:
+        PACKAGE_FILTER: ${{ inputs.package-filter }}
       run: |
         shopt -s globstar nullglob
-        all_packages=(${{ github.workspace }}/src/**/*.nupkg)
-        if [[ -n "${{ inputs.package-filter }}" ]]; then
-          IFS=',' read -ra FILTERS <<< "${{ inputs.package-filter }}"
+        all_packages=("$GITHUB_WORKSPACE"/src/**/*.nupkg)
+        if [[ -n "$PACKAGE_FILTER" ]]; then
+          IFS=',' read -ra FILTERS <<< "$PACKAGE_FILTER"
           matched=()
           for pkg in "${all_packages[@]}"; do
             name=$(basename "$pkg")
             for filter in "${FILTERS[@]}"; do
               filter=$(echo "$filter" | xargs)
-              if [[ "$name" == ${filter}.* ]]; then
+              if [[ "$name" == "${filter}".* ]]; then
                 matched+=("$pkg")
                 break
               fi
@@ -205,13 +227,13 @@ runs:
           packages=("${all_packages[@]}")
         fi
         if [[ ${#packages[@]} -eq 0 ]]; then
-          echo "::warning::No .nupkg files matched the package filter '${{ inputs.package-filter }}'"
+          echo "::warning::No .nupkg files matched the package filter '$PACKAGE_FILTER'"
         else
           echo "Packages to push:"
           printf '  %s\n' "${packages[@]}"
         fi
-        printf '%s\n' "${packages[@]}" > "${{ runner.temp }}/nupkg-list.txt"
-        echo "count=${#packages[@]}" >> $GITHUB_OUTPUT
+        printf '%s\n' "${packages[@]}" > "$RUNNER_TEMP/nupkg-list.txt"
+        echo "count=${#packages[@]}" >> "$GITHUB_OUTPUT"
 
     - name: nuget trusted publishing (1 of 2) - preflight
       shell: bash
@@ -220,7 +242,7 @@ runs:
           && steps.packages.outputs.count > 0
           && ((inputs.push == 'true' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
             || inputs.push-preview == 'true')
-      run: "${{ github.action_path }}/.scripts/nuget-trusted-publishing-preflight.sh"
+      run: bash "$GITHUB_ACTION_PATH/.scripts/nuget-trusted-publishing-preflight.sh"
 
     - name: nuget trusted publishing (2 of 2) - exchange oidc token for api key
       shell: bash
@@ -233,13 +255,14 @@ runs:
         NUGET_USER: ${{ inputs.nuget-user }}
         NUGET_AUDIENCE: https://www.nuget.org
         NUGET_TOKEN_ENDPOINT: https://www.nuget.org/api/v2/token
-      run: "${{ github.action_path }}/.scripts/nuget-trusted-publishing-exchange.sh"
+      run: bash "$GITHUB_ACTION_PATH/.scripts/nuget-trusted-publishing-exchange.sh"
 
     - name: dotnet push (api.nuget.org)
       shell: bash
       env:
         #NUGETORG_API_KEY is exported to $GITHUB_ENV by the trusted publishing step; NUGET_API_KEY is the deprecated fallback.
         NUGET_LEGACY_API_KEY: ${{ inputs.NUGET_API_KEY }}
+        DOTNET_PUSH_ARGS: ${{ inputs.dotnet-push-args }}
       run: |
         set -euo pipefail
         api_key="${NUGETORG_API_KEY:-$NUGET_LEGACY_API_KEY}"
@@ -247,10 +270,11 @@ runs:
           echo "::warning title=nuget.org::No nuget.org credential available (set nuget-user for Trusted Publishing, or NUGET_API_KEY), skipping push to api.nuget.org"
           exit 0
         fi
+        read -r -d '' -a ARGS <<< "$DOTNET_PUSH_ARGS" || true
         while IFS= read -r pkg; do
           [[ -z "$pkg" ]] && continue
-          dotnet nuget push "$pkg" --skip-duplicate --api-key "$api_key" --source https://api.nuget.org/v3/index.json ${{ inputs.dotnet-push-args }}
-        done < "${{ runner.temp }}/nupkg-list.txt"
+          dotnet nuget push "$pkg" --skip-duplicate --api-key "$api_key" --source https://api.nuget.org/v3/index.json "${ARGS[@]}"
+        done < "$RUNNER_TEMP/nupkg-list.txt"
       if: |
         steps.packages.outputs.count > 0
           && ((inputs.push == 'true' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
@@ -258,16 +282,21 @@ runs:
 
     - name: dotnet push (nuget.pkg.github.com)
       shell: bash
+      env:
+        GH_PACKAGES_TOKEN: ${{ inputs.GITHUB_TOKEN }}
+        DOTNET_PUSH_ARGS: ${{ inputs.dotnet-push-args }}
       run: |
-        if [[ -n "${{ inputs.GITHUB_TOKEN }}" ]]; then
-          #Note: GitHub Packages is not a full NuGet feed so for advanced NuGet functions the gpr tool (https://github.com/jcansdale/gpr) may be needed instead.
-          while IFS= read -r pkg; do
-            [[ -z "$pkg" ]] && continue
-            dotnet nuget push "$pkg" --skip-duplicate -k ${{ inputs.GITHUB_TOKEN }} -s https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json ${{ inputs.dotnet-push-args }}
-          done < "${{ runner.temp }}/nupkg-list.txt"
-        else
+        set -euo pipefail
+        if [[ -z "$GH_PACKAGES_TOKEN" ]]; then
           echo "::warning title=GITHUB_TOKEN::GITHUB_TOKEN is missing from secrets, skipping push to nuget.pkg.github.com"
+          exit 0
         fi
+        read -r -d '' -a ARGS <<< "$DOTNET_PUSH_ARGS" || true
+        #Note: GitHub Packages is not a full NuGet feed so for advanced NuGet functions the gpr tool (https://github.com/jcansdale/gpr) may be needed instead.
+        while IFS= read -r pkg; do
+          [[ -z "$pkg" ]] && continue
+          dotnet nuget push "$pkg" --skip-duplicate -k "$GH_PACKAGES_TOKEN" -s "https://nuget.pkg.github.com/$GITHUB_REPOSITORY_OWNER/index.json" "${ARGS[@]}"
+        done < "$RUNNER_TEMP/nupkg-list.txt"
       if: |
         steps.packages.outputs.count > 0
           && inputs.push == 'true'
