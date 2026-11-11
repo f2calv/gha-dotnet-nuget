@@ -95,7 +95,7 @@ runs:
       with:
         dotnet-version: |
           10.0.x
-          11.0.100-rc.3.26522.148
+          11.0.x
 
     #Inputs are free text, so scripts only ever read them as quoted environment variables. Argument
     #strings are split on whitespace only: no globbing, quote parsing or expansion of caller text.
