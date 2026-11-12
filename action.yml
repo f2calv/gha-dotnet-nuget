@@ -94,9 +94,8 @@ runs:
     - uses: actions/setup-dotnet@v6
       with:
         dotnet-version: |
-          8.0.x
-          9.0.x
           10.0.x
+          11.0.x
 
     #Inputs are free text, so scripts only ever read them as quoted environment variables. Argument
     #strings are split on whitespace only: no globbing, quote parsing or expansion of caller text.

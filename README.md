@@ -5,7 +5,7 @@
 [![Marketplace](https://img.shields.io/badge/Marketplace-.NET%20Build%2FTest%2FPack%2FPush-blue)](https://github.com/marketplace/actions/net-build-test-pack-push)
 [![CI](https://github.com/f2calv/gha-dotnet-nuget/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/f2calv/gha-dotnet-nuget/actions/workflows/ci.yml)
 
-The [Action contract](https://github.com/f2calv/gha-dotnet-nuget/blob/main/action.yml) installs .NET SDKs 8, 9 and 10. Use a Linux runner with Bash, `jq` and GNU `find` (for example `ubuntu-24.04`). Package projects must be packable; set `IsPackable` to `false` for projects that must not ship. Push discovery searches `src/**/*.nupkg`, so custom pack output outside `src/` will not be published.
+The [Action contract](https://github.com/f2calv/gha-dotnet-nuget/blob/main/action.yml) installs .NET SDKs 10 and 11. SDKs 8 and 9 are no longer supported. Use a Linux runner with Bash, `jq` and GNU `find` (for example `ubuntu-24.04`). Package projects must be packable; set `IsPackable` to `false` for projects that must not ship. Push discovery searches `src/**/*.nupkg`, so custom pack output outside `src/` will not be published.
 
 ## Usage
 
@@ -167,7 +167,7 @@ flowchart TD
 ## Self-Test
 
 This repository's CI runs the Action from the commit under review against a packable fixture in
-[tests/fixtures](tests/fixtures): restore, build, Microsoft.Testing.Platform tests and pack, with
+[tests/fixtures](tests/fixtures) targeting .NET 10 and 11: restore, build, Microsoft.Testing.Platform tests and pack, with
 `push: false`, so nothing is published. Real publication is exercised by the libraries that use the
 Action when they release.
 
